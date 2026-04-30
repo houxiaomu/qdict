@@ -1,0 +1,66 @@
+name: Dictonary
+options:
+  bundleIdPrefix: app.dictonary
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  Dictonary:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Dictonary
+    resources:
+      - path: Dictonary/Prompt/Prompts
+      - path: Dictonary/Resources/Assets.xcassets
+    info:
+      path: Dictonary/Resources/Info.plist
+      properties:
+        LSUIElement: true
+        CFBundleDisplayName: Dictonary
+        NSHumanReadableCopyright: "© 2026"
+    entitlements:
+      path: Dictonary/Resources/Dictonary.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.network.client: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.Dictonary
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        COMBINE_HIDPI_IMAGES: YES
+  DictonaryTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: DictonaryTests
+    dependencies:
+      - target: Dictonary
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.DictonaryTests
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: NO
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Dictonary:
+    build:
+      targets:
+        Dictonary: all
+        DictonaryTests: [test]
+    test:
+      targets:
+        - DictonaryTests
