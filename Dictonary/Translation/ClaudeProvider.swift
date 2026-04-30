@@ -36,16 +36,14 @@ final class ClaudeProvider: TranslationProvider {
                     try await OpenAICompatibleProvider.checkResponse(response, bytes: bytes)
 
                     var parser = SSEParser()
-                    var chunkData = Data()
-
+                    var buf = Data()
                     for try await byte in bytes {
                         try Task.checkCancellation()
-                        chunkData.append(byte)
-                        if chunkData.count >= 256 {
-                            OpenAICompatibleProvider.flush(&parser, &chunkData, continuation, deltaParser: ClaudeProvider.parseClaudeDelta)
+                        buf.append(byte)
+                        if OpenAICompatibleProvider.drain(&buf, &parser, continuation, deltaParser: ClaudeProvider.parseClaudeDelta) {
+                            return
                         }
                     }
-                    OpenAICompatibleProvider.flush(&parser, &chunkData, continuation, deltaParser: ClaudeProvider.parseClaudeDelta)
                     continuation.finish()
                 } catch is CancellationError {
                     continuation.finish(throwing: TranslationError.cancelled)

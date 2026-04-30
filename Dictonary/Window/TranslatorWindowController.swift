@@ -15,13 +15,12 @@ final class TranslatorWindowController {
             translTemplate: translTemplate
         )
         self.panel = TranslatorPanel()
-        let host = NSHostingView(rootView: TranslatorContentView(vm: vm))
-        // Make the panel grow/shrink to fit SwiftUI content (multi-line input,
-        // streaming output) rather than being clipped by the panel's initial frame.
-        if #available(macOS 13.0, *) {
-            host.sizingOptions = [.intrinsicContentSize]
-        }
-        panel.contentView = host
+        // NSHostingController + contentViewController is what makes the panel
+        // actually resize when SwiftUI content changes (streaming output grows,
+        // multi-line input expands). NSHostingView alone with sizingOptions just
+        // reports the intrinsic size, it does NOT trigger panel resize.
+        let host = NSHostingController(rootView: TranslatorContentView(vm: vm))
+        panel.contentViewController = host
     }
 
     func toggle() {
@@ -59,15 +58,36 @@ final class TranslatorWindowController {
     private func installDismissMonitors() {
         removeDismissMonitors()
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            // Esc = 53
+            guard let self else { return event }
+
+            // Esc = 53 → hide.
             if event.keyCode == 53 {
-                self?.hide()
+                self.hide()
                 return nil
             }
+
+            // Return = 36. Plain Return submits; Shift+Return falls through so
+            // axis: .vertical TextField inserts a newline naturally.
+            if event.keyCode == 36 {
+                let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                let meaningful = mods.subtracting(.numericPad) // Enter key sets numericPad
+                if meaningful.isEmpty {
+                    self.vm.submit()
+                    return nil
+                }
+            }
+
             return event
         }
+        // Click-outside dismissal: only when the panel is "empty" (no input,
+        // no in-flight request, no result). Once the user has typed or sees a
+        // result, leave the panel up so they can copy text or click around.
+        // Esc and the global hotkey still close it explicitly.
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.hide()
+            guard let self else { return }
+            if self.vm.input.isEmpty && self.vm.state == .idle {
+                self.hide()
+            }
         }
     }
 

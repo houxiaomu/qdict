@@ -65,15 +65,6 @@ struct TranslatorContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             inputField
-                .background(
-                    // Hidden shortcut: plain Return submits. Shift+Return doesn't match
-                    // this shortcut, so it falls through to the TextField and inserts a
-                    // newline (the default behavior of axis: .vertical).
-                    Button("", action: { vm.submit() })
-                        .keyboardShortcut(.return, modifiers: [])
-                        .opacity(0)
-                        .frame(width: 0, height: 0)
-                )
 
             switch vm.state {
             case .idle:
