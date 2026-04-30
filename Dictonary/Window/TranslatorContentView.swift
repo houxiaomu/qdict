@@ -88,10 +88,65 @@ final class TranslatorViewModel: ObservableObject {
         input = entry.query
         state = .done(entry.result)
     }
+
+    // MARK: - History drawer state
+
+    @Published var isDrawerOpen: Bool = false
+    @Published var selectedHistoryID: UUID?
+
+    func toggleDrawer(history: HistoryStore) {
+        if isDrawerOpen {
+            closeDrawer()
+        } else {
+            isDrawerOpen = true
+            selectedHistoryID = history.entries.first?.id
+        }
+    }
+
+    func moveSelection(in history: HistoryStore, by delta: Int) {
+        if !isDrawerOpen {
+            isDrawerOpen = true
+            selectedHistoryID = (delta < 0)
+                ? history.entries.first?.id
+                : history.entries.last?.id
+            return
+        }
+        guard !history.entries.isEmpty else { return }
+        let ids = history.entries.map(\.id)
+        let currentIdx = ids.firstIndex(where: { $0 == selectedHistoryID }) ?? 0
+        let newIdx = max(0, min(ids.count - 1, currentIdx + delta))
+        selectedHistoryID = ids[newIdx]
+    }
+
+    func closeDrawer() {
+        isDrawerOpen = false
+        selectedHistoryID = nil
+    }
+
+    func confirmSelection(history: HistoryStore) {
+        guard let id = selectedHistoryID,
+              let entry = history.entries.first(where: { $0.id == id }) else { return }
+        loadFromHistory(entry)
+        closeDrawer()
+    }
+
+    func deleteSelection(history: HistoryStore) {
+        guard let id = selectedHistoryID else { return }
+        let ids = history.entries.map(\.id)
+        let currentIdx = ids.firstIndex(of: id) ?? 0
+        history.remove(id: id)
+        if history.entries.isEmpty {
+            closeDrawer()
+        } else {
+            let newIdx = min(currentIdx, history.entries.count - 1)
+            selectedHistoryID = history.entries[newIdx].id
+        }
+    }
 }
 
 struct TranslatorContentView: View {
     @ObservedObject var vm: TranslatorViewModel
+    @ObservedObject var historyStore: HistoryStore
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -121,6 +176,28 @@ struct TranslatorContentView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(.red)
             }
+
+            if vm.isDrawerOpen {
+                Divider()
+                Text("History")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 2)
+                HistoryDrawerView(
+                    store: historyStore,
+                    selectedID: Binding(
+                        get: { vm.selectedHistoryID },
+                        set: { vm.selectedHistoryID = $0 }
+                    ),
+                    onPick: { entry in
+                        vm.loadFromHistory(entry)
+                        vm.closeDrawer()
+                    },
+                    onDelete: { entry in
+                        historyStore.remove(id: entry.id)
+                    }
+                )
+            }
         }
         .padding(14)
         .frame(width: 560)
@@ -139,8 +216,6 @@ struct TranslatorContentView: View {
         .lineLimit(1...8)
         .focused($inputFocused)
 
-        // Suppress the macOS 15+ Writing Tools / Apple Intelligence affordance
-        // that pins itself to text inputs by default — irrelevant for this UI.
         if #available(macOS 15.0, *) {
             base.writingToolsBehavior(.disabled)
         } else {

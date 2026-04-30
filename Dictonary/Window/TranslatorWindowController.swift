@@ -28,7 +28,7 @@ final class TranslatorWindowController {
         // then stops propagating updates. Instead, the SwiftUI view measures its
         // own size via a GeometryReader preference and calls back here, and we
         // explicitly resize the panel to match.
-        let view = TranslatorContentView(vm: vm)
+        let view = TranslatorContentView(vm: vm, historyStore: historyStore)
         self.host = NSHostingController(rootView: view)
         panel.contentViewController = host
 
@@ -131,20 +131,54 @@ final class TranslatorWindowController {
 
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
+            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.numericPad)
 
-            if event.keyCode == 53 { // Esc
-                self.hardHide()
+            // Esc = 53. Drawer-open: close drawer; otherwise: hard hide.
+            if event.keyCode == 53 {
+                if self.vm.isDrawerOpen {
+                    self.vm.closeDrawer()
+                } else {
+                    self.hardHide()
+                }
                 return nil
             }
 
-            // Return = 36. Plain Return submits; Shift+Return falls through.
+            // Return = 36. In drawer: confirm. Otherwise: submit.
             if event.keyCode == 36 {
-                let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-                let meaningful = mods.subtracting(.numericPad)
-                if meaningful.isEmpty {
-                    self.vm.submit()
+                if mods.isEmpty {
+                    if self.vm.isDrawerOpen {
+                        self.vm.confirmSelection(history: self.historyStore)
+                    } else {
+                        self.vm.submit()
+                    }
                     return nil
                 }
+            }
+
+            // Cmd+Y = 16. Toggle drawer.
+            if event.keyCode == 16 && mods == .command {
+                self.vm.toggleDrawer(history: self.historyStore)
+                return nil
+            }
+
+            // Cmd+↑ = 126, Cmd+↓ = 125.
+            if mods == .command && (event.keyCode == 126 || event.keyCode == 125) {
+                let delta = (event.keyCode == 126) ? -1 : 1
+                self.vm.moveSelection(in: self.historyStore, by: delta)
+                return nil
+            }
+
+            // ↑ / ↓ inside drawer (no modifiers).
+            if self.vm.isDrawerOpen && mods.isEmpty && (event.keyCode == 126 || event.keyCode == 125) {
+                let delta = (event.keyCode == 126) ? -1 : 1
+                self.vm.moveSelection(in: self.historyStore, by: delta)
+                return nil
+            }
+
+            // Backspace / Delete = 51 / 117 inside drawer.
+            if self.vm.isDrawerOpen && (event.keyCode == 51 || event.keyCode == 117) {
+                self.vm.deleteSelection(history: self.historyStore)
+                return nil
             }
 
             return event
