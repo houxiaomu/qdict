@@ -8,7 +8,9 @@ final class TranslatorWindowController {
     private let vm: TranslatorViewModel
     private let host: NSHostingController<TranslatorContentView>
     private let historyStore: HistoryStore
-    private var localMonitor: Any?
+    private var localKeyMonitor: Any?
+    private var globalMouseMonitor: Any?
+    private var resignActiveObserver: NSObjectProtocol?
     private var stateSubscription: AnyCancellable?
     private var inputSubscription: AnyCancellable?
 
@@ -122,24 +124,23 @@ final class TranslatorWindowController {
         panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 
-    // MARK: - Esc + click-outside dismissal
+    // MARK: - Esc + outside click + app deactivation dismissal
 
     private func installDismissMonitors() {
         removeDismissMonitors()
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+
+        localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
 
-            // Esc = 53 → hard-hide.
-            if event.keyCode == 53 {
+            if event.keyCode == 53 { // Esc
                 self.hardHide()
                 return nil
             }
 
-            // Return = 36. Plain Return submits; Shift+Return falls through so
-            // axis: .vertical TextField inserts a newline naturally.
+            // Return = 36. Plain Return submits; Shift+Return falls through.
             if event.keyCode == 36 {
                 let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-                let meaningful = mods.subtracting(.numericPad) // Enter key sets numericPad
+                let meaningful = mods.subtracting(.numericPad)
                 if meaningful.isEmpty {
                     self.vm.submit()
                     return nil
@@ -148,9 +149,30 @@ final class TranslatorWindowController {
 
             return event
         }
+
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
+        ) { [weak self] _ in
+            // Any mouse-down outside our process means user is interacting with another app
+            // — soft-dismiss so the panel doesn't sit on top of their work.
+            self?.softHide()
+        }
+
+        resignActiveObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.softHide()
+        }
     }
 
     private func removeDismissMonitors() {
-        if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
+        if let m = localKeyMonitor { NSEvent.removeMonitor(m); localKeyMonitor = nil }
+        if let m = globalMouseMonitor { NSEvent.removeMonitor(m); globalMouseMonitor = nil }
+        if let o = resignActiveObserver {
+            NotificationCenter.default.removeObserver(o)
+            resignActiveObserver = nil
+        }
     }
 }
