@@ -1,12 +1,16 @@
 import AppKit
 import SwiftUI
+import Combine
 
 @MainActor
 final class TranslatorWindowController {
     private let panel: TranslatorPanel
     private let vm: TranslatorViewModel
+    private let host: NSHostingController<TranslatorContentView>
     private var localMonitor: Any?
     private var globalMonitor: Any?
+    private var stateSubscription: AnyCancellable?
+    private var inputSubscription: AnyCancellable?
 
     init(service: TranslationService, dictTemplate: String, translTemplate: String) {
         self.vm = TranslatorViewModel(
@@ -15,12 +19,31 @@ final class TranslatorWindowController {
             translTemplate: translTemplate
         )
         self.panel = TranslatorPanel()
-        // NSHostingController + contentViewController is what makes the panel
-        // actually resize when SwiftUI content changes (streaming output grows,
-        // multi-line input expands). NSHostingView alone with sizingOptions just
-        // reports the intrinsic size, it does NOT trigger panel resize.
-        let host = NSHostingController(rootView: TranslatorContentView(vm: vm))
+        // We previously tried NSHostingController + preferredContentSize, but that
+        // only auto-resizes for the first few layout passes during streaming and
+        // then stops propagating updates. Instead, the SwiftUI view measures its
+        // own size via a GeometryReader preference and calls back here, and we
+        // explicitly resize the panel to match.
+        let view = TranslatorContentView(vm: vm)
+        self.host = NSHostingController(rootView: view)
         panel.contentViewController = host
+
+        // NSHostingController only auto-propagates preferredContentSize for the
+        // first few layout passes; it stops driving panel resize during a long
+        // streamed update. So we drive it explicitly: every time state or input
+        // changes, recompute the SwiftUI fitting size and apply it.
+        let resize: () -> Void = { [weak self] in
+            guard let self else { return }
+            let fitting = self.host.view.fittingSize
+            guard fitting.width > 0, fitting.height > 0 else { return }
+            self.panel.setContentSize(fitting)
+        }
+        stateSubscription = vm.$state
+            .receive(on: RunLoop.main)
+            .sink { _ in resize() }
+        inputSubscription = vm.$input
+            .receive(on: RunLoop.main)
+            .sink { _ in resize() }
     }
 
     func toggle() {
