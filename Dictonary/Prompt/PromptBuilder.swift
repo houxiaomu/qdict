@@ -92,3 +92,17 @@ enum PromptBuilder {
         }
     }
 }
+
+extension PromptBuilder {
+    /// Loads a template from the app bundle. Throws if the file is missing — that's a packaging bug.
+    static func loadTemplate(named name: String, in bundle: Bundle = .main) throws -> String {
+        guard let url = bundle.url(forResource: name, withExtension: "txt") else {
+            throw NSError(
+                domain: "PromptBuilder",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Missing prompt template: \(name).txt"]
+            )
+        }
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+}

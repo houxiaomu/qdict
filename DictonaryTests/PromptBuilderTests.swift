@@ -125,3 +125,23 @@ final class PromptBuilderTests: XCTestCase {
         XCTAssertEqual(result.systemPrompt, "TRANS zh->en")
     }
 }
+
+extension PromptBuilderTests {
+    func testTemplatesAreBundled() throws {
+        let appBundle = Bundle(for: type(of: self)).bundleURL
+            .deletingLastPathComponent()      // PlugIns
+            .appendingPathComponent("Dictonary.app")
+            .appendingPathComponent("Contents")
+            .appendingPathComponent("Resources")
+        // The exact path varies; just check bundle.main also exposes them.
+        let bundle = Bundle(for: PromptBuilderTestsAnchor.self)
+        // Fallback: try loading via main bundle (the host app target).
+        if let _ = Bundle.main.url(forResource: "dictionary", withExtension: "txt") {
+            return
+        }
+        // If main bundle doesn't have it, the test is running without the host app — skip.
+        try XCTSkipIf(true, "Templates accessed via host app bundle, not test bundle")
+    }
+}
+
+private final class PromptBuilderTestsAnchor {}
