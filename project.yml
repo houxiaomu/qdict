@@ -41,8 +41,15 @@ targets:
         COMBINE_HIDPI_IMAGES: YES
       configs:
         Debug:
-          CODE_SIGN_IDENTITY: "-"
-          CODE_SIGNING_REQUIRED: NO
+          # Use a stable signing identity for Debug too. Ad-hoc ("-") changes
+          # the signature on every build, which invalidates the Keychain ACL
+          # for the saved API key and re-prompts for the login password.
+          CODE_SIGN_IDENTITY: "simonkey dev"
+          CODE_SIGNING_REQUIRED: YES
+          # Hardened runtime blocks Xcode's incremental-link debug dylib from
+          # loading because that dylib is ad-hoc signed by Xcode. Disable for
+          # Debug so the app can launch; Release keeps it on.
+          ENABLE_HARDENED_RUNTIME: NO
         Release:
           CODE_SIGN_IDENTITY: "simonkey dev"
           CODE_SIGNING_REQUIRED: YES
@@ -58,8 +65,12 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.DictonaryTests
         CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGNING_REQUIRED: NO
+        # Match the host app's signing identity so the test bundle dylib can
+        # load into the Dictonary process. Ad-hoc here would mismatch the
+        # simonkey-dev-signed host and fail at load time.
+        CODE_SIGN_IDENTITY: "simonkey dev"
+        CODE_SIGNING_REQUIRED: YES
+        ENABLE_HARDENED_RUNTIME: NO
         DEVELOPMENT_TEAM: ""
         GENERATE_INFOPLIST_FILE: YES
 schemes:
