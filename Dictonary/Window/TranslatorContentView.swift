@@ -64,11 +64,16 @@ struct TranslatorContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TextField("输入中文或英文，回车翻译", text: $vm.input)
-                .textFieldStyle(.plain)
-                .font(.system(size: 17))
-                .focused($inputFocused)
-                .onSubmit { vm.submit() }
+            inputField
+                .background(
+                    // Hidden shortcut: plain Return submits. Shift+Return doesn't match
+                    // this shortcut, so it falls through to the TextField and inserts a
+                    // newline (the default behavior of axis: .vertical).
+                    Button("", action: { vm.submit() })
+                        .keyboardShortcut(.return, modifiers: [])
+                        .opacity(0)
+                        .frame(width: 0, height: 0)
+                )
 
             switch vm.state {
             case .idle:
@@ -90,5 +95,26 @@ struct TranslatorContentView: View {
         .padding(16)
         .frame(width: 560)
         .onAppear { inputFocused = true }
+    }
+
+    @ViewBuilder
+    private var inputField: some View {
+        let base = TextField(
+            "输入中文或英文，回车翻译（Shift+回车换行）",
+            text: $vm.input,
+            axis: .vertical
+        )
+        .textFieldStyle(.plain)
+        .font(.system(size: 17))
+        .lineLimit(1...8)
+        .focused($inputFocused)
+
+        // Suppress the macOS 15+ Writing Tools / Apple Intelligence affordance
+        // that pins itself to text inputs by default — irrelevant for this UI.
+        if #available(macOS 15.0, *) {
+            base.writingToolsBehavior(.disabled)
+        } else {
+            base
+        }
     }
 }

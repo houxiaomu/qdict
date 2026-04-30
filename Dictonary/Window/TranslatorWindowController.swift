@@ -16,6 +16,11 @@ final class TranslatorWindowController {
         )
         self.panel = TranslatorPanel()
         let host = NSHostingView(rootView: TranslatorContentView(vm: vm))
+        // Make the panel grow/shrink to fit SwiftUI content (multi-line input,
+        // streaming output) rather than being clipped by the panel's initial frame.
+        if #available(macOS 13.0, *) {
+            host.sizingOptions = [.intrinsicContentSize]
+        }
         panel.contentView = host
     }
 
