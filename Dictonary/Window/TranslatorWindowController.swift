@@ -48,31 +48,66 @@ final class TranslatorWindowController {
             .sink { _ in resize() }
     }
 
+    var isVisible: Bool { panel.isVisible }
+
+    private var pendingSnapshot: SessionSnapshot?
+
+    // MARK: - Show / hide
+
     func toggle() {
-        if panel.isVisible { hide() } else { show() }
+        if panel.isVisible {
+            bringToFront()
+        } else {
+            show()
+        }
     }
 
     func show() {
+        if let snap = pendingSnapshot, snap.isFresh() {
+            vm.restore(snap)
+        } else {
+            // Stale or absent → start clean.
+            vm.reset()
+        }
+        pendingSnapshot = nil
+
         positionAtTopCenterOfMouseScreen()
-        // Don't NSApp.activate — that steals focus from the previous app and
-        // means hiding the panel can't return focus to it. The panel is a
-        // .nonactivatingPanel and overrides canBecomeKey, so makeKeyAndOrderFront
-        // alone gives it keyboard input without flipping the app to frontmost.
         panel.makeKeyAndOrderFront(nil)
         installDismissMonitors()
     }
 
-    func hide() {
+    /// Bring the already-visible panel to front and refocus its input.
+    func bringToFront() {
+        panel.orderFrontRegardless()
+        panel.makeKey()
+    }
+
+    /// Explicit dismiss (Esc / status-bar-while-visible). Clears the session.
+    func hardHide() {
+        pendingSnapshot = nil
         removeDismissMonitors()
         panel.orderOut(nil)
-        // Belt-and-suspenders: if the app did become frontmost (e.g. user
-        // clicked into the panel from another app), hand focus back so the
-        // user lands in their previous window after dismissing.
         if NSApp.isActive {
             NSApp.hide(nil)
         }
         vm.reset()
     }
+
+    /// Soft dismiss (click-outside / app deactivation). Preserve session for 5 minutes.
+    func softHide() {
+        guard panel.isVisible else { return }
+        pendingSnapshot = vm.snapshot()
+        removeDismissMonitors()
+        panel.orderOut(nil)
+        if NSApp.isActive {
+            NSApp.hide(nil)
+        }
+        // Note: vm state is intentionally NOT reset.
+    }
+
+    /// Backwards-compat alias used during the refactor — callers should migrate.
+    @available(*, deprecated, renamed: "hardHide")
+    func hide() { hardHide() }
 
     // MARK: - Position
 
@@ -94,9 +129,9 @@ final class TranslatorWindowController {
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
 
-            // Esc = 53 → hide.
+            // Esc = 53 → hard-hide.
             if event.keyCode == 53 {
-                self.hide()
+                self.hardHide()
                 return nil
             }
 

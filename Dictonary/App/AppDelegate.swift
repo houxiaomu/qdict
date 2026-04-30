@@ -11,7 +11,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Status bar wiring
-        container.statusBar.onOpen = { [weak self] in self?.container.translator.toggle() }
+        container.statusBar.onOpen = { [weak self] in
+            guard let self else { return }
+            if self.container.translator.isVisible {
+                self.container.translator.hardHide()
+            } else {
+                self.container.translator.show()
+            }
+        }
         container.statusBar.onPreferences = { [weak self] in self?.showPreferences() }
         container.statusBar.onQuit = { NSApp.terminate(nil) }
         refreshAPIKeyIndicator()
