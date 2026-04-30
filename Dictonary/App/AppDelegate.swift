@@ -27,9 +27,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             try? SMAppService.mainApp.register()
         }
 
-        // First-launch
+        // First-launch shows Welcome; subsequent launches pop the translator
+        // immediately, on the assumption the user just clicked the app to use it.
+        // Boot-time launch-at-login is suppressed via a system-uptime heuristic
+        // so the window doesn't ambush the user during login.
         if !container.settings.didOnboard {
             showWelcome()
+        } else if !isLikelyLoginLaunch {
+            DispatchQueue.main.async { [weak self] in
+                self?.container.translator.show()
+            }
         }
 
         // Refresh the red-dot indicator immediately when the user adds/changes an API key.
@@ -49,6 +56,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func refreshAPIKeyIndicator() {
         let key = container.settings.apiKey(for: container.settings.provider) ?? ""
         container.statusBar.needsAPIKey = key.isEmpty
+    }
+
+    /// Heuristic: if launch-at-login is enabled AND the system booted within
+    /// the last 90s, this launch is almost certainly the auto-start. Skip the
+    /// auto-popup so we don't ambush the user during boot.
+    private var isLikelyLoginLaunch: Bool {
+        guard container.settings.launchAtLogin else { return false }
+        return ProcessInfo.processInfo.systemUptime < 90
     }
 
     /// Re-register hotkey when user changes it in Preferences.
