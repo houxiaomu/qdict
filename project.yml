@@ -35,9 +35,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.Dictonary
-        CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "simonkey dev"
+        CODE_SIGNING_REQUIRED: YES
+        DEVELOPMENT_TEAM: ""
         ENABLE_HARDENED_RUNTIME: YES
         COMBINE_HIDPI_IMAGES: YES
   DictonaryTests:
@@ -51,9 +52,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.DictonaryTests
-        CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "simonkey dev"
+        CODE_SIGNING_REQUIRED: YES
+        DEVELOPMENT_TEAM: ""
         GENERATE_INFOPLIST_FILE: YES
 schemes:
   Dictonary:
