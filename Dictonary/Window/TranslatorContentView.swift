@@ -15,12 +15,22 @@ final class TranslatorViewModel: ObservableObject {
     private let service: TranslationService
     private let dictTemplate: String
     private let translTemplate: String
+    private let historyStore: HistoryStore?
+    private let historyMode: Mode
     private var task: Task<Void, Never>?
 
-    init(service: TranslationService, dictTemplate: String, translTemplate: String) {
+    init(
+        service: TranslationService,
+        dictTemplate: String,
+        translTemplate: String,
+        historyStore: HistoryStore? = nil,
+        historyMode: Mode = .dictionary
+    ) {
         self.service = service
         self.dictTemplate = dictTemplate
         self.translTemplate = translTemplate
+        self.historyStore = historyStore
+        self.historyMode = historyMode
     }
 
     func submit() {
@@ -42,6 +52,7 @@ final class TranslatorViewModel: ObservableObject {
                     self.state = .streaming(buffer)
                 }
                 self.state = .done(buffer)
+                self.historyStore?.append(query: text, result: buffer, mode: self.historyMode)
             } catch let e as TranslationError {
                 if case .cancelled = e { return } // swallow
                 self.state = .error(e.errorDescription ?? "未知错误")
@@ -55,6 +66,27 @@ final class TranslatorViewModel: ObservableObject {
         task?.cancel()
         input = ""
         state = .idle
+    }
+
+    // MARK: - Session snapshot (soft-hide / restore)
+
+    func snapshot(now: Date = Date()) -> SessionSnapshot? {
+        SessionSnapshot.makeIfWorthCapturing(input: input, state: state, now: now)
+    }
+
+    func restore(_ snapshot: SessionSnapshot) {
+        task?.cancel()
+        input = snapshot.input
+        state = snapshot.state
+    }
+
+    // MARK: - History recall
+
+    /// Replay a history entry without re-calling the API.
+    func loadFromHistory(_ entry: HistoryEntry) {
+        task?.cancel()
+        input = entry.query
+        state = .done(entry.result)
     }
 }
 
