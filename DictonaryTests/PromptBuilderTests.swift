@@ -128,20 +128,18 @@ final class PromptBuilderTests: XCTestCase {
 
 extension PromptBuilderTests {
     func testTemplatesAreBundled() throws {
-        let appBundle = Bundle(for: type(of: self)).bundleURL
-            .deletingLastPathComponent()      // PlugIns
-            .appendingPathComponent("Dictonary.app")
-            .appendingPathComponent("Contents")
-            .appendingPathComponent("Resources")
-        // The exact path varies; just check bundle.main also exposes them.
-        let bundle = Bundle(for: PromptBuilderTestsAnchor.self)
-        // Fallback: try loading via main bundle (the host app target).
-        if let _ = Bundle.main.url(forResource: "dictionary", withExtension: "txt") {
-            return
-        }
-        // If main bundle doesn't have it, the test is running without the host app — skip.
-        try XCTSkipIf(true, "Templates accessed via host app bundle, not test bundle")
+        XCTAssertNotNil(
+            Bundle.main.url(forResource: "dictionary", withExtension: "txt"),
+            "dictionary.txt must be packaged in the app bundle"
+        )
+        XCTAssertNotNil(
+            Bundle.main.url(forResource: "translation", withExtension: "txt"),
+            "translation.txt must be packaged in the app bundle"
+        )
+
+        let dict = try PromptBuilder.loadTemplate(named: "dictionary")
+        let trans = try PromptBuilder.loadTemplate(named: "translation")
+        XCTAssertTrue(dict.contains("{{direction}}"))
+        XCTAssertTrue(trans.contains("{{direction}}"))
     }
 }
-
-private final class PromptBuilderTestsAnchor {}

@@ -25,7 +25,6 @@ enum PromptBuilder {
         }
 
         let cjkCount = trimmed.unicodeScalars.filter { isCJK($0) }.count
-        let totalScalars = trimmed.unicodeScalars.count
 
         if cjkCount > 0 {
             // Chinese path. Count CJK chars only; ignore spaces & non-CJK punctuation.

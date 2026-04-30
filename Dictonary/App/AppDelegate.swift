@@ -6,13 +6,14 @@ import ServiceManagement
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let container = AppContainer()
     private var welcomeWindow: NSWindow?
+    private var apiKeyObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Status bar wiring
         container.statusBar.onOpen = { [weak self] in self?.container.translator.toggle() }
         container.statusBar.onPreferences = { Self.openPreferences() }
         container.statusBar.onQuit = { NSApp.terminate(nil) }
-        container.statusBar.needsAPIKey = (container.settings.apiKey(for: container.settings.provider) ?? "").isEmpty
+        refreshAPIKeyIndicator()
 
         // Hotkey wiring
         container.hotKeyManager.onPress = { [weak self] in self?.container.translator.toggle() }
@@ -31,13 +32,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             showWelcome()
         }
 
-        // React to API-key changes for the red-dot indicator.
-        // Simple poll-on-change via NotificationCenter would require more wiring;
-        // for v1 we refresh on every translator open.
-        // (See `applicationDidBecomeActive` below.)
+        // Refresh the red-dot indicator immediately when the user adds/changes an API key.
+        apiKeyObserver = NotificationCenter.default.addObserver(
+            forName: .dictonaryAPIKeyChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.refreshAPIKeyIndicator() }
+        }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
+        refreshAPIKeyIndicator()
+    }
+
+    private func refreshAPIKeyIndicator() {
         let key = container.settings.apiKey(for: container.settings.provider) ?? ""
         container.statusBar.needsAPIKey = key.isEmpty
     }

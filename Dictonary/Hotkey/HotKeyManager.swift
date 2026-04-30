@@ -1,6 +1,11 @@
 import AppKit
 import Carbon.HIToolbox
 
+/// Wraps Carbon's `RegisterEventHotKey`. The C event handler dereferences a raw pointer
+/// to `self`, so this manager MUST outlive any registered combo. `AppContainer` holds it
+/// for the full app lifetime; do not recreate it. `deinit` calls `unregister()` to cover
+/// any future restructuring, but if registration ever moves to a non-singleton owner,
+/// switch `passUnretained` to `passRetained` + matching `release` in `deinit`.
 final class HotKeyManager {
 
     private var hotKeyRef: EventHotKeyRef?
@@ -17,7 +22,7 @@ final class HotKeyManager {
     func register(_ combo: HotkeyCombo) -> Bool {
         unregister()
 
-        var hotKeyID = EventHotKeyID(signature: OSType(0x4458_4C54), id: handlerID) // "DXLT"
+        let hotKeyID = EventHotKeyID(signature: OSType(0x4458_4C54), id: handlerID) // "DXLT"
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(
             combo.keyCode,

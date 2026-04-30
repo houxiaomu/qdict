@@ -1,6 +1,11 @@
 import Foundation
 import Combine
 
+extension Notification.Name {
+    /// Posted whenever an API key is added, changed, or removed for any provider.
+    static let dictonaryAPIKeyChanged = Notification.Name("DictonaryAPIKeyChanged")
+}
+
 final class Settings: ObservableObject {
 
     // Keys for UserDefaults
@@ -71,10 +76,12 @@ final class Settings: ObservableObject {
 
     func setAPIKey(_ key: String, for kind: ProviderKind) throws {
         try keychain.write(key, account: kind.rawValue)
+        NotificationCenter.default.post(name: .dictonaryAPIKeyChanged, object: kind)
     }
 
     func deleteAPIKey(for kind: ProviderKind) throws {
         try keychain.delete(account: kind.rawValue)
+        NotificationCenter.default.post(name: .dictonaryAPIKeyChanged, object: kind)
     }
 
     /// The endpoint to actually use: user override if present, else provider default.

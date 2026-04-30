@@ -33,7 +33,7 @@ class OpenAICompatibleProvider: TranslationProvider {
                     ])
 
                     let (bytes, response) = try await session.bytes(for: request)
-                    try Self.checkResponse(response, bytes: bytes)
+                    try await Self.checkResponse(response, bytes: bytes)
 
                     var parser = SSEParser()
                     var dataChunk = Data()
@@ -61,7 +61,7 @@ class OpenAICompatibleProvider: TranslationProvider {
         }
     }
 
-    static func checkResponse(_ response: URLResponse, bytes: URLSession.AsyncBytes) throws {
+    static func checkResponse(_ response: URLResponse, bytes: URLSession.AsyncBytes) async throws {
         guard let http = response as? HTTPURLResponse else {
             throw TranslationError.network(message: "no HTTP response")
         }
@@ -71,8 +71,9 @@ class OpenAICompatibleProvider: TranslationProvider {
             throw TranslationError.rateLimited(retryAfter: ra)
         }
         if !(200...299).contains(http.statusCode) {
-            // Sync-collect body since this is the failure path.
-            let body = try awaitableCollect(bytes: bytes)
+            var collected = Data()
+            for try await b in bytes { collected.append(b) }
+            let body = String(data: collected, encoding: .utf8) ?? ""
             throw TranslationError.serverError(status: http.statusCode, body: body)
         }
     }
@@ -109,22 +110,6 @@ class OpenAICompatibleProvider: TranslationProvider {
         return content
     }
 
-    private static func awaitableCollect(bytes: URLSession.AsyncBytes) throws -> String {
-        // Synchronously drain remaining bytes by spinning a child task.
-        let semaphore = DispatchSemaphore(value: 0)
-        var collected = Data()
-        var capturedError: Error?
-        let task = Task {
-            defer { semaphore.signal() }
-            do {
-                for try await b in bytes { collected.append(b) }
-            } catch { capturedError = error }
-        }
-        semaphore.wait()
-        _ = task
-        if let e = capturedError { throw e }
-        return String(data: collected, encoding: .utf8) ?? ""
-    }
 }
 
 /// OpenAI itself.

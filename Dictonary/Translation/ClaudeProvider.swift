@@ -33,7 +33,7 @@ final class ClaudeProvider: TranslationProvider {
                     ])
 
                     let (bytes, response) = try await session.bytes(for: request)
-                    try OpenAICompatibleProvider.checkResponse(response, bytes: bytes)
+                    try await OpenAICompatibleProvider.checkResponse(response, bytes: bytes)
 
                     var parser = SSEParser()
                     var chunkData = Data()
