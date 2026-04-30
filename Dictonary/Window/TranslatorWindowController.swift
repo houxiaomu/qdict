@@ -7,15 +7,18 @@ final class TranslatorWindowController {
     private let panel: TranslatorPanel
     private let vm: TranslatorViewModel
     private let host: NSHostingController<TranslatorContentView>
+    private let historyStore: HistoryStore
     private var localMonitor: Any?
     private var stateSubscription: AnyCancellable?
     private var inputSubscription: AnyCancellable?
 
-    init(service: TranslationService, dictTemplate: String, translTemplate: String) {
+    init(service: TranslationService, dictTemplate: String, translTemplate: String, historyStore: HistoryStore) {
+        self.historyStore = historyStore
         self.vm = TranslatorViewModel(
             service: service,
             dictTemplate: dictTemplate,
-            translTemplate: translTemplate
+            translTemplate: translTemplate,
+            historyStore: historyStore
         )
         self.panel = TranslatorPanel()
         // We previously tried NSHostingController + preferredContentSize, but that

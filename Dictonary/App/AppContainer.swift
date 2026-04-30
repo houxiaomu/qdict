@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 
 @MainActor
 final class AppContainer {
@@ -7,8 +8,10 @@ final class AppContainer {
     let hotKeyManager: HotKeyManager
     let statusBar: StatusBarController
     let translator: TranslatorWindowController
+    let historyStore: HistoryStore
     let dictTemplate: String
     let translTemplate: String
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         let s = Settings()
@@ -17,7 +20,6 @@ final class AppContainer {
         self.hotKeyManager = HotKeyManager()
         self.statusBar = StatusBarController()
 
-        // Load prompt templates from bundle. If missing, the app is broken — fail loudly.
         do {
             self.dictTemplate = try PromptBuilder.loadTemplate(named: "dictionary")
             self.translTemplate = try PromptBuilder.loadTemplate(named: "translation")
@@ -25,10 +27,23 @@ final class AppContainer {
             fatalError("Missing prompt templates: \(error)")
         }
 
+        let url = (try? HistoryStore.defaultURL())
+            ?? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("history.json")
+        let store = HistoryStore(fileURL: url, limit: s.historyLimit)
+        self.historyStore = store
+
         self.translator = TranslatorWindowController(
             service: translationService,
             dictTemplate: dictTemplate,
-            translTemplate: translTemplate
+            translTemplate: translTemplate,
+            historyStore: store
         )
+
+        s.$historyLimit
+            .dropFirst() // skip the initial replay; we already used the value above.
+            .sink { [weak store] newLimit in
+                Task { @MainActor in store?.setLimit(newLimit) }
+            }
+            .store(in: &cancellables)
     }
 }
