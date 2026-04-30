@@ -63,27 +63,34 @@ struct TranslatorContentView: View {
     @FocusState private var inputFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             inputField
 
             switch vm.state {
             case .idle:
                 EmptyView()
             case .streaming(let s) where s.isEmpty:
+                Divider()
                 ProgressView().controlSize(.small)
+                    .padding(.vertical, 4)
             case .streaming(let s), .done(let s):
+                Divider()
                 ScrollView {
                     Text(LocalizedStringKey(s))
+                        .font(.system(size: 13))
+                        .lineSpacing(2)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxHeight: 320)
             case .error(let msg):
+                Divider()
                 Text("⚠️ \(msg)")
+                    .font(.system(size: 13))
                     .foregroundStyle(.red)
             }
         }
-        .padding(16)
+        .padding(14)
         .frame(width: 560)
         .onAppear { inputFocused = true }
     }
@@ -96,7 +103,7 @@ struct TranslatorContentView: View {
             axis: .vertical
         )
         .textFieldStyle(.plain)
-        .font(.system(size: 17))
+        .font(.system(size: 15))
         .lineLimit(1...8)
         .focused($inputFocused)
 

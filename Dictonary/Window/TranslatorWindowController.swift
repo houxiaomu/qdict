@@ -8,7 +8,6 @@ final class TranslatorWindowController {
     private let vm: TranslatorViewModel
     private let host: NSHostingController<TranslatorContentView>
     private var localMonitor: Any?
-    private var globalMonitor: Any?
     private var stateSubscription: AnyCancellable?
     private var inputSubscription: AnyCancellable?
 
@@ -52,7 +51,10 @@ final class TranslatorWindowController {
 
     func show() {
         positionAtTopCenterOfMouseScreen()
-        NSApp.activate(ignoringOtherApps: true)
+        // Don't NSApp.activate — that steals focus from the previous app and
+        // means hiding the panel can't return focus to it. The panel is a
+        // .nonactivatingPanel and overrides canBecomeKey, so makeKeyAndOrderFront
+        // alone gives it keyboard input without flipping the app to frontmost.
         panel.makeKeyAndOrderFront(nil)
         installDismissMonitors()
     }
@@ -60,6 +62,12 @@ final class TranslatorWindowController {
     func hide() {
         removeDismissMonitors()
         panel.orderOut(nil)
+        // Belt-and-suspenders: if the app did become frontmost (e.g. user
+        // clicked into the panel from another app), hand focus back so the
+        // user lands in their previous window after dismissing.
+        if NSApp.isActive {
+            NSApp.hide(nil)
+        }
         vm.reset()
     }
 
@@ -102,20 +110,9 @@ final class TranslatorWindowController {
 
             return event
         }
-        // Click-outside dismissal: only when the panel is "empty" (no input,
-        // no in-flight request, no result). Once the user has typed or sees a
-        // result, leave the panel up so they can copy text or click around.
-        // Esc and the global hotkey still close it explicitly.
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            guard let self else { return }
-            if self.vm.input.isEmpty && self.vm.state == .idle {
-                self.hide()
-            }
-        }
     }
 
     private func removeDismissMonitors() {
         if let m = localMonitor { NSEvent.removeMonitor(m); localMonitor = nil }
-        if let m = globalMonitor { NSEvent.removeMonitor(m); globalMonitor = nil }
     }
 }

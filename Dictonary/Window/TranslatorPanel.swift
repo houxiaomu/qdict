@@ -12,7 +12,12 @@ final class TranslatorPanel: NSPanel {
         self.titlebarAppearsTransparent = true
         self.isMovableByWindowBackground = true
         self.level = .floating
-        self.hidesOnDeactivate = true
+        // We previously set hidesOnDeactivate = true so the panel disappeared when
+        // the app lost focus. That made the window vanish on any outside click and,
+        // combined with status-bar reactivation quirks, sometimes left it
+        // unreachable. Keep it visible until the user explicitly dismisses (Esc,
+        // hotkey, or status-bar toggle).
+        self.hidesOnDeactivate = false
         self.becomesKeyOnlyIfNeeded = false
         self.isReleasedWhenClosed = false
         self.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
