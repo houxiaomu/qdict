@@ -6,12 +6,21 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
-            HStack {
-                Text("Hotkey:")
-                HotkeyRecorderView(combo: $settings.hotkey, onChange: onHotkeyChanged)
+            Section {
+                LabeledContent("Hotkey") {
+                    HotkeyRecorderView(combo: $settings.hotkey, onChange: onHotkeyChanged)
+                }
+            } footer: {
+                Text("Press the hotkey anywhere to summon the translator window.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Toggle("Launch at login", isOn: $settings.launchAtLogin)
+
+            Section("Startup") {
+                Toggle("Launch at login", isOn: $settings.launchAtLogin)
+            }
         }
-        .padding(20)
+        .formStyle(.grouped)
+        .scrollDisabled(true)
     }
 }
