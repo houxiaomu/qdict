@@ -33,23 +33,63 @@ func drawIcon(size s: CGFloat) {
     bgGradient.draw(in: bgRect, angle: -60) // top-leftish to bottom-right
     NSGraphicsContext.current?.restoreGraphicsState()
 
-    // ---- 2. White "book" card, centered, slight drop shadow
-    let bookW = s * 0.62
-    let bookH = s * 0.78
+    // ---- 2. Page block (the "thickness" layer behind the cover). Drawn
+    // slightly offset up-and-right so it peeks out as visible page edges,
+    // giving the icon real "this is a 3D book" cues.
+    let bookW = s * 0.60
+    let bookH = s * 0.74
     let bookX = (s - bookW) / 2
-    let bookY = (s - bookH) / 2
+    let bookY = (s - bookH) / 2 - s * 0.01 // shifted down a hair to balance after offset
+    let pageOffsetX = s * 0.022
+    let pageOffsetY = s * 0.018
+    let bookRadius = s * 0.05
+
+    let pageRect = NSRect(
+        x: bookX + pageOffsetX,
+        y: bookY + pageOffsetY,
+        width: bookW,
+        height: bookH
+    )
+    let pagePath = NSBezierPath(roundedRect: pageRect, xRadius: bookRadius, yRadius: bookRadius)
+
+    NSGraphicsContext.current?.saveGraphicsState()
+    let pageShadow = NSShadow()
+    pageShadow.shadowOffset = NSSize(width: 0, height: -s * 0.012)
+    pageShadow.shadowBlurRadius = s * 0.04
+    pageShadow.shadowColor = NSColor.black.withAlphaComponent(0.25)
+    pageShadow.set()
+    NSColor(red: 0.96, green: 0.95, blue: 0.92, alpha: 1.0).setFill() // cream page edge
+    pagePath.fill()
+    NSGraphicsContext.current?.restoreGraphicsState()
+
+    // Thin horizontal lines on the visible top of the page block — reads as
+    // stacked pages.
+    NSGraphicsContext.current?.saveGraphicsState()
+    pagePath.addClip()
+    let pageLineColor = NSColor(red: 0.78, green: 0.74, blue: 0.65, alpha: 0.9)
+    pageLineColor.setStroke()
+    let lineWidth = max(s * 0.006, 0.5)
+    for i in 1...3 {
+        let y = pageRect.maxY - CGFloat(i) * s * 0.010
+        let line = NSBezierPath()
+        line.move(to: NSPoint(x: pageRect.minX + s * 0.04, y: y))
+        line.line(to: NSPoint(x: pageRect.maxX - s * 0.015, y: y))
+        line.lineWidth = lineWidth
+        line.stroke()
+    }
+    NSGraphicsContext.current?.restoreGraphicsState()
+
+    // ---- 3. Front cover (white card)
     let bookRect = NSRect(x: bookX, y: bookY, width: bookW, height: bookH)
-    let bookRadius = s * 0.045
     let bookPath = NSBezierPath(roundedRect: bookRect, xRadius: bookRadius, yRadius: bookRadius)
 
     NSGraphicsContext.current?.saveGraphicsState()
-    let shadow = NSShadow()
-    shadow.shadowOffset = NSSize(width: 0, height: -s * 0.018)
-    shadow.shadowBlurRadius = s * 0.05
-    shadow.shadowColor = NSColor.black.withAlphaComponent(0.30)
-    shadow.set()
+    let coverShadow = NSShadow()
+    coverShadow.shadowOffset = NSSize(width: -s * 0.005, height: -s * 0.018)
+    coverShadow.shadowBlurRadius = s * 0.05
+    coverShadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
+    coverShadow.set()
 
-    // Book cover gradient (very subtle, near-white with a hint of cool tone)
     let coverTop = NSColor(red: 1.00, green: 1.00, blue: 1.00, alpha: 1.0)
     let coverBot = NSColor(red: 0.93, green: 0.95, blue: 0.99, alpha: 1.0)
     let coverGradient = NSGradient(starting: coverTop, ending: coverBot)!
@@ -57,28 +97,36 @@ func drawIcon(size s: CGFloat) {
     coverGradient.draw(in: bookRect, angle: -90)
     NSGraphicsContext.current?.restoreGraphicsState()
 
-    // ---- 3. Spine: a soft blue strip on the left edge
-    let spineW = bookW * 0.10
+    // ---- 4. Spine: wider, with a darker groove between spine and cover.
+    let spineW = bookW * 0.16
     let spineRect = NSRect(x: bookX, y: bookY, width: spineW, height: bookH)
     NSGraphicsContext.current?.saveGraphicsState()
     bookPath.addClip()
-    let spineTop = NSColor(red: 0.20, green: 0.46, blue: 0.92, alpha: 1.0)
-    let spineBot = NSColor(red: 0.08, green: 0.28, blue: 0.72, alpha: 1.0)
+    let spineTop = NSColor(red: 0.22, green: 0.48, blue: 0.94, alpha: 1.0)
+    let spineBot = NSColor(red: 0.07, green: 0.27, blue: 0.70, alpha: 1.0)
     NSGradient(starting: spineTop, ending: spineBot)!.draw(in: spineRect, angle: -90)
 
-    // Thin highlight line on the spine's right edge
+    // Groove: a thin dark line separating spine from cover.
+    let groove = NSBezierPath()
+    groove.move(to: NSPoint(x: bookX + spineW, y: bookY + s * 0.02))
+    groove.line(to: NSPoint(x: bookX + spineW, y: bookY + bookH - s * 0.02))
+    NSColor.black.withAlphaComponent(0.22).setStroke()
+    groove.lineWidth = max(s * 0.006, 0.6)
+    groove.stroke()
+
+    // Highlight on the spine's inner edge for a subtle 3D feel.
     let highlight = NSBezierPath()
-    highlight.move(to: NSPoint(x: bookX + spineW, y: bookY + s * 0.025))
-    highlight.line(to: NSPoint(x: bookX + spineW, y: bookY + bookH - s * 0.025))
-    NSColor(white: 1, alpha: 0.18).setStroke()
+    highlight.move(to: NSPoint(x: bookX + spineW + lineWidth, y: bookY + s * 0.025))
+    highlight.line(to: NSPoint(x: bookX + spineW + lineWidth, y: bookY + bookH - s * 0.025))
+    NSColor(white: 1, alpha: 0.20).setStroke()
     highlight.lineWidth = max(s * 0.005, 0.5)
     highlight.stroke()
     NSGraphicsContext.current?.restoreGraphicsState()
 
-    // ---- 4. "D" letter: bold blue, centered on the white area (right of spine)
+    // ---- 5. "D" letter: bold blue, centered on the cover area (right of spine).
     let letterAreaX = bookX + spineW
     let letterAreaW = bookW - spineW
-    let fontSize = bookH * 0.62
+    let fontSize = bookH * 0.58
     let letterColor = NSColor(red: 0.11, green: 0.36, blue: 0.84, alpha: 1.0)
     let attrs: [NSAttributedString.Key: Any] = [
         .font: NSFont.systemFont(ofSize: fontSize, weight: .heavy),
@@ -87,7 +135,6 @@ func drawIcon(size s: CGFloat) {
     ]
     let letter = NSAttributedString(string: "D", attributes: attrs)
     let letterSize = letter.size()
-    // The font's drawn rect has padding above/below the cap height; nudge baseline upward.
     let letterX = letterAreaX + (letterAreaW - letterSize.width) / 2
     let letterY = bookY + (bookH - letterSize.height) / 2 - s * 0.015
     letter.draw(at: NSPoint(x: letterX, y: letterY))
