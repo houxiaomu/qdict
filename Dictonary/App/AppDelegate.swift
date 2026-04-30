@@ -92,6 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         let view = SettingsView(
             settings: container.settings,
+            historyStore: container.historyStore,
             translationService: container.translationService,
             onHotkeyChanged: { [weak self] in self?.reregisterHotkey() }
         )
