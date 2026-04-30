@@ -6,12 +6,13 @@ import ServiceManagement
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let container = AppContainer()
     private var welcomeWindow: NSWindow?
+    private var preferencesWindow: NSWindow?
     private var apiKeyObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Status bar wiring
         container.statusBar.onOpen = { [weak self] in self?.container.translator.toggle() }
-        container.statusBar.onPreferences = { Self.openPreferences() }
+        container.statusBar.onPreferences = { [weak self] in self?.showPreferences() }
         container.statusBar.onQuit = { NSApp.terminate(nil) }
         refreshAPIKeyIndicator()
 
@@ -71,19 +72,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         _ = container.hotKeyManager.register(container.settings.hotkey)
     }
 
-    static func openPreferences() {
-        if #available(macOS 14, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
+    /// Manage the Preferences window ourselves rather than going through the
+    /// SwiftUI `Settings` scene + `showSettingsWindow:` selector dispatch.
+    /// That dispatch path is flaky for LSUIElement apps because the responder
+    /// chain has no resolver until the app is active, and even then the action
+    /// is sometimes silently dropped. A directly-managed NSWindow is reliable.
+    func showPreferences() {
         NSApp.activate(ignoringOtherApps: true)
+        if let win = preferencesWindow {
+            win.makeKeyAndOrderFront(nil)
+            return
+        }
+        let view = SettingsView(
+            settings: container.settings,
+            translationService: container.translationService,
+            onHotkeyChanged: { [weak self] in self?.reregisterHotkey() }
+        )
+        let host = NSHostingController(rootView: view)
+        let win = NSWindow(contentViewController: host)
+        win.styleMask = [.titled, .closable, .miniaturizable]
+        win.title = "Preferences"
+        win.isReleasedWhenClosed = false
+        win.center()
+        preferencesWindow = win
+        win.makeKeyAndOrderFront(nil)
     }
 
     private func showWelcome() {
         let welcome = WelcomeView(
             openPreferences: { [weak self] in
-                Self.openPreferences()
+                self?.showPreferences()
                 self?.container.settings.didOnboard = true
                 self?.welcomeWindow?.close()
             },
