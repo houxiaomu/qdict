@@ -15,6 +15,10 @@ final class TranslatorWindowController {
     private var stateSubscription: AnyCancellable?
     private var inputSubscription: AnyCancellable?
 
+    /// Called when the user presses Cmd+, while the panel is key. Lets the app
+    /// delegate open Preferences without relying on the (absent) main menu.
+    var onShowPreferences: (() -> Void)?
+
     init(service: TranslationService, dictTemplate: String, translTemplate: String, historyStore: HistoryStore) {
         self.historyStore = historyStore
         self.vm = TranslatorViewModel(
@@ -159,6 +163,17 @@ final class TranslatorWindowController {
             // Cmd+Y = 16. Toggle drawer.
             if event.keyCode == 16 && mods == .command {
                 self.vm.toggleDrawer(history: self.historyStore)
+                return nil
+            }
+
+            // Cmd+, = 43. LSUIElement apps have no main menu, so the standard
+            // Preferences shortcut never reaches a responder while the panel is
+            // key. Route it explicitly. Soft-hide first so the session is
+            // preserved if the user dismisses Preferences.
+            if event.keyCode == 43 && mods == .command {
+                let openPrefs = self.onShowPreferences
+                self.softHide()
+                openPrefs?()
                 return nil
             }
 

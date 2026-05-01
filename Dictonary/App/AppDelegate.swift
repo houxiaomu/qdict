@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         container.statusBar.onPreferences = { [weak self] in self?.showPreferences() }
         container.statusBar.onQuit = { NSApp.terminate(nil) }
+        container.translator.onShowPreferences = { [weak self] in self?.showPreferences() }
 
         // Hotkey wiring
         container.hotKeyManager.onPress = { [weak self] in self?.container.translator.toggle() }
@@ -32,12 +33,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             try? SMAppService.mainApp.register()
         }
 
+        // SwiftUI's `Settings` scene auto-installs a "Settings…"/"Preferences…"
+        // menu item with Cmd+, that opens the empty stub window. Hijack it so
+        // Cmd+, opens our real Preferences instead. Done after a runloop hop
+        // because SwiftUI installs the menu during launch.
+        DispatchQueue.main.async { [weak self] in
+            self?.rewireDefaultPreferencesMenuItem()
+        }
+
         // Pop the translator on launch unless this is a boot-time auto-start.
         if !isLikelyLoginLaunch {
             DispatchQueue.main.async { [weak self] in
                 self?.container.translator.show()
             }
         }
+    }
+
+    /// Find the auto-installed Cmd+, menu item (created by the SwiftUI
+    /// `Settings` scene) and rewire its target/action to our own handler so
+    /// it doesn't open the empty stub window.
+    private func rewireDefaultPreferencesMenuItem() {
+        guard let mainMenu = NSApp.mainMenu else { return }
+        for topItem in mainMenu.items {
+            guard let submenu = topItem.submenu else { continue }
+            for item in submenu.items
+            where item.keyEquivalent == ","
+                && item.keyEquivalentModifierMask == .command {
+                item.target = self
+                item.action = #selector(menuShowPreferences(_:))
+            }
+        }
+    }
+
+    @objc private func menuShowPreferences(_ sender: Any?) {
+        showPreferences()
     }
 
     /// Heuristic: if launch-at-login is enabled AND the system booted within
