@@ -1,11 +1,11 @@
 #!/usr/bin/env swift
 //
-// Generate Dictonary's AppIcon set.
+// Generate QDict's AppIcon set.
 //
 // Usage:  swift scripts/generate-icon.swift
 //
 // Writes 10 PNGs (and updates Contents.json) under
-// Dictonary/Resources/Assets.xcassets/AppIcon.appiconset/.
+// QDict/Resources/Assets.xcassets/AppIcon.appiconset/.
 //
 // To tweak the look, edit the constants in `drawIcon` below.
 
@@ -175,7 +175,7 @@ func makePNG(size pixels: Int) throws -> Data {
 let scriptDir = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
 let projectRoot = scriptDir.deletingLastPathComponent()
 let iconsetDir = projectRoot
-    .appendingPathComponent("Dictonary")
+    .appendingPathComponent("QDict")
     .appendingPathComponent("Resources")
     .appendingPathComponent("Assets.xcassets")
     .appendingPathComponent("AppIcon.appiconset")

@@ -29,7 +29,7 @@ final class HistoryStore: ObservableObject {
             in: .userDomainMask,
             appropriateFor: nil,
             create: true
-        ).appendingPathComponent("Dictonary", isDirectory: true)
+        ).appendingPathComponent("QDict", isDirectory: true)
         try fm.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("history.json")
     }

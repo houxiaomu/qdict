@@ -1,5 +1,5 @@
 import XCTest
-@testable import Dictonary
+@testable import QDict
 
 final class ClaudeProviderTests: XCTestCase {
     override func tearDown() { MockURLProtocol.reset(); super.tearDown() }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct DictonaryApp: App {
+struct QDictApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     // The Preferences window is managed directly by AppDelegate (see

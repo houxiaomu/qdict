@@ -1,6 +1,6 @@
-name: Dictonary
+name: QDict
 options:
-  bundleIdPrefix: app.dictonary
+  bundleIdPrefix: app.qdict
   deploymentTarget:
     macOS: "13.0"
   createIntermediateGroups: true
@@ -12,29 +12,29 @@ settings:
     CURRENT_PROJECT_VERSION: "2"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
 targets:
-  Dictonary:
+  QDict:
     type: application
     platform: macOS
     deploymentTarget: "13.0"
     sources:
-      - path: Dictonary
+      - path: QDict
     resources:
-      - path: Dictonary/Prompt/Prompts
-      - path: Dictonary/Resources/Assets.xcassets
+      - path: QDict/Prompt/Prompts
+      - path: QDict/Resources/Assets.xcassets
     info:
-      path: Dictonary/Resources/Info.plist
+      path: QDict/Resources/Info.plist
       properties:
         LSUIElement: true
-        CFBundleDisplayName: Dictonary
+        CFBundleDisplayName: QDict
         NSHumanReadableCopyright: "© 2026"
     entitlements:
-      path: Dictonary/Resources/Dictonary.entitlements
+      path: QDict/Resources/QDict.entitlements
       properties:
         com.apple.security.app-sandbox: false
         com.apple.security.network.client: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.Dictonary
+        PRODUCT_BUNDLE_IDENTIFIER: app.qdict.QDict
         CODE_SIGN_STYLE: Manual
         DEVELOPMENT_TEAM: ""
         ENABLE_HARDENED_RUNTIME: YES
@@ -53,20 +53,20 @@ targets:
         Release:
           CODE_SIGN_IDENTITY: "simonkey dev"
           CODE_SIGNING_REQUIRED: YES
-  DictonaryTests:
+  QDictTests:
     type: bundle.unit-test
     platform: macOS
     deploymentTarget: "13.0"
     sources:
-      - path: DictonaryTests
+      - path: QDictTests
     dependencies:
-      - target: Dictonary
+      - target: QDict
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.dictonary.DictonaryTests
+        PRODUCT_BUNDLE_IDENTIFIER: app.qdict.QDictTests
         CODE_SIGN_STYLE: Manual
         # Match the host app's signing identity so the test bundle dylib can
-        # load into the Dictonary process. Ad-hoc here would mismatch the
+        # load into the QDict process. Ad-hoc here would mismatch the
         # simonkey-dev-signed host and fail at load time.
         CODE_SIGN_IDENTITY: "simonkey dev"
         CODE_SIGNING_REQUIRED: YES
@@ -74,11 +74,11 @@ targets:
         DEVELOPMENT_TEAM: ""
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  Dictonary:
+  QDict:
     build:
       targets:
-        Dictonary: all
-        DictonaryTests: [test]
+        QDict: all
+        QDictTests: [test]
     test:
       targets:
-        - DictonaryTests
+        - QDictTests

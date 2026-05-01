@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         container.hotKeyManager.onPress = { [weak self] in self?.container.translator.toggle() }
         if !container.hotKeyManager.register(container.settings.hotkey) {
             // Best-effort fallback: don't block startup. User can fix in Preferences.
-            NSLog("[Dictonary] Failed to register hotkey \(container.settings.hotkey.displayString)")
+            NSLog("[QDict] Failed to register hotkey \(container.settings.hotkey.displayString)")
         }
 
         // Login item

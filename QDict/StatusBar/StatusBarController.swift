@@ -49,7 +49,7 @@ final class StatusBarController {
             bytesPerRow: 0,
             bitsPerPixel: 0
         ) else {
-            return NSImage(systemSymbolName: "book.closed.fill", accessibilityDescription: "Dictonary") ?? NSImage()
+            return NSImage(systemSymbolName: "book.closed.fill", accessibilityDescription: "QDict") ?? NSImage()
         }
         rep.size = size
 
@@ -101,7 +101,7 @@ final class StatusBarController {
         menu.addItem(NSMenuItem(title: "Preferences…", action: #selector(handlePreferences), keyEquivalent: ","))
         menu.items.last?.target = self
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quit Dictonary", action: #selector(handleQuit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit QDict", action: #selector(handleQuit), keyEquivalent: "q"))
         menu.items.last?.target = self
     }
 

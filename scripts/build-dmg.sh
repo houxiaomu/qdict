@@ -8,7 +8,7 @@
 #   - create-dmg        (brew install create-dmg) — optional; falls back to hdiutil
 #
 # Output:
-#   build/Dictonary-<version>.dmg
+#   build/QDict-<version>.dmg
 #
 # Recipients will see a Gatekeeper warning on first open because the app is
 # ad-hoc signed. They need to right-click the .app → Open → Open. One time only.
@@ -17,7 +17,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-APP_NAME="Dictonary"
+APP_NAME="QDict"
 VERSION=$(awk '/MARKETING_VERSION:/ {print $2}' project.yml | tr -d '"' | head -1)
 BUILD_DIR="./build"
 RELEASE_DIR="$BUILD_DIR/Build/Products/Release"
