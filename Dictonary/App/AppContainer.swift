@@ -16,7 +16,7 @@ final class AppContainer {
     init() {
         let s = Settings()
         self.settings = s
-        self.translationService = TranslationService(settings: s)
+        self.translationService = TranslationService()
         self.hotKeyManager = HotKeyManager()
         self.statusBar = StatusBarController()
 

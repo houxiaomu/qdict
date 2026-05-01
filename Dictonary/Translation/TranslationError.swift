@@ -1,7 +1,6 @@
 import Foundation
 
 enum TranslationError: Error, LocalizedError, Equatable {
-    case missingAPIKey
     case network(message: String)
     case unauthorized
     case rateLimited(retryAfter: TimeInterval?)
@@ -11,8 +10,6 @@ enum TranslationError: Error, LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .missingAPIKey:
-            return "未配置 API Key"
         case .network(let m):
             return "网络不可用：\(m)"
         case .unauthorized:
@@ -30,8 +27,7 @@ enum TranslationError: Error, LocalizedError, Equatable {
 
     static func == (lhs: TranslationError, rhs: TranslationError) -> Bool {
         switch (lhs, rhs) {
-        case (.missingAPIKey, .missingAPIKey),
-             (.unauthorized, .unauthorized),
+        case (.unauthorized, .unauthorized),
              (.cancelled, .cancelled):
             return true
         case let (.network(a), .network(b)):

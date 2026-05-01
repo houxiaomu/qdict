@@ -7,7 +7,7 @@ final class TranslatorViewModelTests: XCTestCase {
     private func makeVM() -> TranslatorViewModel {
         let settings = Settings(defaults: UserDefaults(suiteName: "test.\(UUID().uuidString)")!,
                                 keychain: InMemoryKeychain())
-        let svc = TranslationService(settings: settings)
+        let svc = TranslationService()
         return TranslatorViewModel(
             service: svc,
             dictTemplate: "{{text}}",
