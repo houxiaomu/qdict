@@ -11,6 +11,7 @@ final class TranslatorWindowController {
     private var localKeyMonitor: Any?
     private var globalMouseMonitor: Any?
     private var resignActiveObserver: NSObjectProtocol?
+    private var workspaceActivateObserver: NSObjectProtocol?
     private var stateSubscription: AnyCancellable?
     private var inputSubscription: AnyCancellable?
 
@@ -58,7 +59,7 @@ final class TranslatorWindowController {
 
     func toggle() {
         if panel.isVisible {
-            bringToFront()
+            softHide()
         } else {
             show()
         }
@@ -200,6 +201,21 @@ final class TranslatorWindowController {
         ) { [weak self] _ in
             Task { @MainActor [weak self] in self?.softHide() }
         }
+
+        // didResignActive only fires if our app was active — but with
+        // .nonactivatingPanel + LSUIElement, the panel often shows without
+        // activating us, so Cmd+Tab to another app produces no resign event.
+        // Observe the workspace-level activation instead: when ANY other app
+        // becomes frontmost, soft-hide.
+        workspaceActivateObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            guard app?.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
+            Task { @MainActor [weak self] in self?.softHide() }
+        }
     }
 
     private func removeDismissMonitors() {
@@ -208,6 +224,10 @@ final class TranslatorWindowController {
         if let o = resignActiveObserver {
             NotificationCenter.default.removeObserver(o)
             resignActiveObserver = nil
+        }
+        if let o = workspaceActivateObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(o)
+            workspaceActivateObserver = nil
         }
     }
 }
