@@ -13,7 +13,7 @@ enum ProviderConfig {
     /// API keys per provider. Empty string means "not configured yet".
     /// Filled in locally; this repo is not published.
     static let apiKeys: [ProviderKind: String] = [
-        .deepseek: "",
+        .deepseek: "REDACTED",
         .openai:   "",
         .claude:   ""
     ]
