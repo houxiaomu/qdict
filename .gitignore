@@ -17,3 +17,6 @@ Package.resolved
 # IDE
 .vscode/
 .idea/
+
+# Claude Code agent state
+.claude/
