@@ -9,10 +9,6 @@ final class StatusBarController {
     var onPreferences: (() -> Void)?
     var onQuit: (() -> Void)?
 
-    var needsAPIKey: Bool = false {
-        didSet { renderIcon() }
-    }
-
     init() {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         menu = NSMenu()
@@ -25,17 +21,8 @@ final class StatusBarController {
         button.image = Self.makeTemplateIcon()
         button.imagePosition = .imageLeft
         button.contentTintColor = nil // let template image render with system tint
-        if needsAPIKey {
-            // Red bullet next to the icon as a "needs setup" hint. Use an
-            // attributed string so only the dot is red, not the whole button.
-            button.attributedTitle = NSAttributedString(
-                string: " •",
-                attributes: [.foregroundColor: NSColor.systemRed]
-            )
-        } else {
-            button.attributedTitle = NSAttributedString()
-            button.title = ""
-        }
+        button.attributedTitle = NSAttributedString()
+        button.title = ""
         button.target = self
         button.action = #selector(handleClick)
         // NSStatusBarButton fires its action on left clicks only by default;
