@@ -14,6 +14,8 @@ final class TranslatorWindowController {
     private var workspaceActivateObserver: NSObjectProtocol?
     private var stateSubscription: AnyCancellable?
     private var inputSubscription: AnyCancellable?
+    private var drawerSubscription: AnyCancellable?
+    private var historySubscription: AnyCancellable?
 
     /// Called when the user presses Cmd+, while the panel is key. Lets the app
     /// delegate open Preferences without relying on the (absent) main menu.
@@ -51,6 +53,12 @@ final class TranslatorWindowController {
             .receive(on: RunLoop.main)
             .sink { _ in resize() }
         inputSubscription = vm.$input
+            .receive(on: RunLoop.main)
+            .sink { _ in resize() }
+        drawerSubscription = vm.$isDrawerOpen
+            .receive(on: RunLoop.main)
+            .sink { _ in resize() }
+        historySubscription = historyStore.$entries
             .receive(on: RunLoop.main)
             .sink { _ in resize() }
     }
