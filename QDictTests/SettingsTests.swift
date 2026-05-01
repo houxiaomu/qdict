@@ -11,7 +11,6 @@ final class SettingsTests: XCTestCase {
         let s = Settings(defaults: makeDefaults())
         XCTAssertEqual(s.hotkey, .defaultCombo)
         XCTAssertFalse(s.launchAtLogin)
-        XCTAssertEqual(s.historyLimit, 50)
     }
 
     func testHotkeyChangePersists() throws {
@@ -29,25 +28,5 @@ final class SettingsTests: XCTestCase {
         s.launchAtLogin = true
         let s2 = Settings(defaults: defaults)
         XCTAssertTrue(s2.launchAtLogin)
-    }
-
-    func testHistoryLimitPersists() {
-        let defaults = makeDefaults()
-        let s = Settings(defaults: defaults)
-        s.historyLimit = 25
-        let s2 = Settings(defaults: defaults)
-        XCTAssertEqual(s2.historyLimit, 25)
-    }
-
-    func testHistoryLimitClampsToZeroMin() {
-        let s = Settings(defaults: makeDefaults())
-        s.historyLimit = -5
-        XCTAssertEqual(s.historyLimit, 0)
-    }
-
-    func testHistoryLimitClampsToMax() {
-        let s = Settings(defaults: makeDefaults())
-        s.historyLimit = 9999
-        XCTAssertEqual(s.historyLimit, 500)
     }
 }

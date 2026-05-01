@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 
 @MainActor
 final class AppContainer {
@@ -11,7 +10,6 @@ final class AppContainer {
     let historyStore: HistoryStore
     let dictTemplate: String
     let translTemplate: String
-    private var cancellables = Set<AnyCancellable>()
 
     init() {
         let s = Settings()
@@ -29,7 +27,7 @@ final class AppContainer {
 
         let url = (try? HistoryStore.defaultURL())
             ?? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("history.json")
-        let store = HistoryStore(fileURL: url, limit: s.historyLimit)
+        let store = HistoryStore(fileURL: url, limit: 50)
         self.historyStore = store
 
         self.translator = TranslatorWindowController(
@@ -38,12 +36,5 @@ final class AppContainer {
             translTemplate: translTemplate,
             historyStore: store
         )
-
-        s.$historyLimit
-            .dropFirst() // skip the initial replay; we already used the value above.
-            .sink { [weak store] newLimit in
-                Task { @MainActor in store?.setLimit(newLimit) }
-            }
-            .store(in: &cancellables)
     }
 }
