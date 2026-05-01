@@ -10,7 +10,7 @@ final class HistoryStore: ObservableObject {
 
     private let fileURL: URL
     private var limit: Int
-    private let io = DispatchQueue(label: "app.dictonary.history.io")
+    private let io = DispatchQueue(label: "app.qdict.history.io")
 
     init(fileURL: URL, limit: Int) {
         self.fileURL = fileURL
