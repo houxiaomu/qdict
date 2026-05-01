@@ -188,8 +188,9 @@ final class TranslatorWindowController {
             matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]
         ) { [weak self] _ in
             // Any mouse-down outside our process means user is interacting with another app
-            // — soft-dismiss so the panel doesn't sit on top of their work.
-            self?.softHide()
+            // — soft-dismiss so the panel doesn't sit on top of their work. Hop to the main
+            // actor since softHide is MainActor-isolated.
+            Task { @MainActor [weak self] in self?.softHide() }
         }
 
         resignActiveObserver = NotificationCenter.default.addObserver(
@@ -197,7 +198,7 @@ final class TranslatorWindowController {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.softHide()
+            Task { @MainActor [weak self] in self?.softHide() }
         }
     }
 
