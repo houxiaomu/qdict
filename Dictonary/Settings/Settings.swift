@@ -1,38 +1,16 @@
 import Foundation
 import Combine
 
-extension Notification.Name {
-    /// Posted whenever an API key is added, changed, or removed for any provider.
-    static let dictonaryAPIKeyChanged = Notification.Name("DictonaryAPIKeyChanged")
-}
-
 final class Settings: ObservableObject {
 
     // Keys for UserDefaults
     private enum Key {
-        static let provider     = "provider"
-        static let model        = "model"
-        static let endpoint     = "endpoint"
         static let hotkey       = "hotkey"
         static let launchAtLogin = "launchAtLogin"
-        static let didOnboard   = "didOnboard"
         static let historyLimit = "historyLimit"
     }
 
     private let defaults: UserDefaults
-    private let keychain: KeychainService
-
-    @Published var provider: ProviderKind {
-        didSet { defaults.set(provider.rawValue, forKey: Key.provider) }
-    }
-
-    @Published var model: String {
-        didSet { defaults.set(model, forKey: Key.model) }
-    }
-
-    @Published var endpoint: URL? {
-        didSet { defaults.set(endpoint?.absoluteString, forKey: Key.endpoint) }
-    }
 
     @Published var hotkey: HotkeyCombo {
         didSet { try? saveHotkey(hotkey) }
@@ -40,10 +18,6 @@ final class Settings: ObservableObject {
 
     @Published var launchAtLogin: Bool {
         didSet { defaults.set(launchAtLogin, forKey: Key.launchAtLogin) }
-    }
-
-    @Published var didOnboard: Bool {
-        didSet { defaults.set(didOnboard, forKey: Key.didOnboard) }
     }
 
     @Published var historyLimit: Int {
@@ -57,19 +31,9 @@ final class Settings: ObservableObject {
         }
     }
 
-    init(defaults: UserDefaults = .standard, keychain: KeychainService = SystemKeychain()) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.keychain = keychain
 
-        let providerRaw = defaults.string(forKey: Key.provider) ?? ProviderKind.deepseek.rawValue
-        let providerKind = ProviderKind(rawValue: providerRaw) ?? .deepseek
-        self.provider = providerKind
-        self.model = defaults.string(forKey: Key.model) ?? providerKind.defaultModel
-        if let s = defaults.string(forKey: Key.endpoint), let url = URL(string: s) {
-            self.endpoint = url
-        } else {
-            self.endpoint = nil
-        }
         if let data = defaults.data(forKey: Key.hotkey),
            let combo = try? JSONDecoder().decode(HotkeyCombo.self, from: data) {
             self.hotkey = combo
@@ -77,30 +41,8 @@ final class Settings: ObservableObject {
             self.hotkey = .defaultCombo
         }
         self.launchAtLogin = defaults.bool(forKey: Key.launchAtLogin)
-        self.didOnboard = defaults.bool(forKey: Key.didOnboard)
         let raw = defaults.object(forKey: Key.historyLimit) as? Int
         self.historyLimit = max(0, min(500, raw ?? 50))
-    }
-
-    // MARK: - API key helpers
-
-    func apiKey(for kind: ProviderKind) -> String? {
-        (try? keychain.read(account: kind.rawValue)) ?? nil
-    }
-
-    func setAPIKey(_ key: String, for kind: ProviderKind) throws {
-        try keychain.write(key, account: kind.rawValue)
-        NotificationCenter.default.post(name: .dictonaryAPIKeyChanged, object: kind)
-    }
-
-    func deleteAPIKey(for kind: ProviderKind) throws {
-        try keychain.delete(account: kind.rawValue)
-        NotificationCenter.default.post(name: .dictonaryAPIKeyChanged, object: kind)
-    }
-
-    /// The endpoint to actually use: user override if present, else provider default.
-    func resolvedEndpoint(for kind: ProviderKind) -> URL {
-        endpoint ?? kind.defaultEndpoint
     }
 
     private func saveHotkey(_ combo: HotkeyCombo) throws {
