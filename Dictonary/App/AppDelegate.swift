@@ -5,9 +5,7 @@ import ServiceManagement
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let container = AppContainer()
-    private var welcomeWindow: NSWindow?
     private var preferencesWindow: NSWindow?
-    private var apiKeyObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Status bar wiring
@@ -21,7 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
         container.statusBar.onPreferences = { [weak self] in self?.showPreferences() }
         container.statusBar.onQuit = { NSApp.terminate(nil) }
-        refreshAPIKeyIndicator()
 
         // Hotkey wiring
         container.hotKeyManager.onPress = { [weak self] in self?.container.translator.toggle() }
@@ -35,35 +32,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             try? SMAppService.mainApp.register()
         }
 
-        // First-launch shows Welcome; subsequent launches pop the translator
-        // immediately, on the assumption the user just clicked the app to use it.
-        // Boot-time launch-at-login is suppressed via a system-uptime heuristic
-        // so the window doesn't ambush the user during login.
-        if !container.settings.didOnboard {
-            showWelcome()
-        } else if !isLikelyLoginLaunch {
+        // Pop the translator on launch unless this is a boot-time auto-start.
+        if !isLikelyLoginLaunch {
             DispatchQueue.main.async { [weak self] in
                 self?.container.translator.show()
             }
         }
-
-        // Refresh the red-dot indicator immediately when the user adds/changes an API key.
-        apiKeyObserver = NotificationCenter.default.addObserver(
-            forName: .dictonaryAPIKeyChanged,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.refreshAPIKeyIndicator() }
-        }
-    }
-
-    func applicationDidBecomeActive(_ notification: Notification) {
-        refreshAPIKeyIndicator()
-    }
-
-    private func refreshAPIKeyIndicator() {
-        let key = container.settings.apiKey(for: container.settings.provider) ?? ""
-        container.statusBar.needsAPIKey = key.isEmpty
     }
 
     /// Heuristic: if launch-at-login is enabled AND the system booted within
@@ -103,27 +77,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         win.center()
         preferencesWindow = win
         win.makeKeyAndOrderFront(nil)
-    }
-
-    private func showWelcome() {
-        let welcome = WelcomeView(
-            openPreferences: { [weak self] in
-                self?.showPreferences()
-                self?.container.settings.didOnboard = true
-                self?.welcomeWindow?.close()
-            },
-            skip: { [weak self] in
-                self?.container.settings.didOnboard = true
-                self?.welcomeWindow?.close()
-            }
-        )
-        let host = NSHostingController(rootView: welcome)
-        let win = NSWindow(contentViewController: host)
-        win.styleMask = [.titled, .closable]
-        win.title = "Welcome"
-        win.center()
-        win.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-        welcomeWindow = win
     }
 }
