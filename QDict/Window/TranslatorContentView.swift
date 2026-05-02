@@ -147,41 +147,74 @@ final class TranslatorViewModel: ObservableObject {
 struct TranslatorContentView: View {
     @ObservedObject var vm: TranslatorViewModel
     @ObservedObject var historyStore: HistoryStore
+    let onShowPreferences: () -> Void
     @FocusState private var inputFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            inputField
+        TranslatorShell {
+            TranslatorHeaderView(onSettings: onShowPreferences)
+            themedDivider
+            TranslatorInputView(vm: vm, isFocused: $inputFocused)
+            themedDivider
+            TranslatorHintsView()
+            resultSection
+            drawerSection
+        }
+        .onAppear { inputFocused = true }
+    }
 
-            switch vm.state {
-            case .idle:
-                EmptyView()
-            case .streaming(let s) where s.isEmpty:
-                Divider()
+    // MARK: - Result section (preserved from previous implementation)
+
+    @ViewBuilder
+    private var resultSection: some View {
+        switch vm.state {
+        case .idle:
+            EmptyView()
+        case .streaming(let s) where s.isEmpty:
+            VStack(alignment: .leading, spacing: 0) {
+                themedDivider
                 ProgressView().controlSize(.small)
-                    .padding(.vertical, 4)
-            case .streaming(let s), .done(let s):
-                Divider()
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+            }
+        case .streaming(let s), .done(let s):
+            VStack(alignment: .leading, spacing: 0) {
+                themedDivider
                 ScrollView {
                     Text(LocalizedStringKey(s))
                         .font(.system(size: 13))
                         .lineSpacing(2)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
                 }
                 .frame(maxHeight: 320)
-            case .error(let msg):
-                Divider()
+            }
+        case .error(let msg):
+            VStack(alignment: .leading, spacing: 0) {
+                themedDivider
                 Text("⚠️ \(msg)")
                     .font(.system(size: 13))
                     .foregroundStyle(.red)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
             }
+        }
+    }
 
-            if vm.isDrawerOpen {
-                Divider()
+    // MARK: - History drawer section (preserved)
+
+    @ViewBuilder
+    private var drawerSection: some View {
+        if vm.isDrawerOpen {
+            VStack(alignment: .leading, spacing: 0) {
+                themedDivider
                 Text("History")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
                     .padding(.bottom, 2)
                 HistoryDrawerView(
                     store: historyStore,
@@ -197,29 +230,15 @@ struct TranslatorContentView: View {
                         historyStore.remove(id: entry.id)
                     }
                 )
+                .padding(.horizontal, 10)
+                .padding(.bottom, 8)
             }
         }
-        .padding(14)
-        .frame(width: 560)
-        .onAppear { inputFocused = true }
     }
 
-    @ViewBuilder
-    private var inputField: some View {
-        let base = TextField(
-            "输入中文或英文，回车翻译（Shift+回车换行）",
-            text: $vm.input,
-            axis: .vertical
-        )
-        .textFieldStyle(.plain)
-        .font(.system(size: 15))
-        .lineLimit(1...8)
-        .focused($inputFocused)
-
-        if #available(macOS 15.0, *) {
-            base.writingToolsBehavior(.disabled)
-        } else {
-            base
-        }
+    private var themedDivider: some View {
+        Rectangle()
+            .fill(TranslatorTheme.dividerColor)
+            .frame(height: 0.5)
     }
 }

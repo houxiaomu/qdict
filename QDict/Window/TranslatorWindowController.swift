@@ -35,9 +35,24 @@ final class TranslatorWindowController {
         // then stops propagating updates. Instead, the SwiftUI view measures its
         // own size via a GeometryReader preference and calls back here, and we
         // explicitly resize the panel to match.
-        let view = TranslatorContentView(vm: vm, historyStore: historyStore)
-        self.host = NSHostingController(rootView: view)
+        // The closure passed as onShowPreferences captures self weakly. Swift
+        // requires all stored properties initialized before self can be
+        // captured, so we install a no-op closure first and replace
+        // host.rootView once init has finished assigning properties.
+        let placeholderView = TranslatorContentView(
+            vm: vm,
+            historyStore: historyStore,
+            onShowPreferences: {}
+        )
+        self.host = NSHostingController(rootView: placeholderView)
         panel.contentViewController = host
+        host.rootView = TranslatorContentView(
+            vm: vm,
+            historyStore: historyStore,
+            onShowPreferences: { [weak self] in
+                self?.showPreferencesAndSoftHide()
+            }
+        )
 
         // NSHostingController only auto-propagates preferredContentSize for the
         // first few layout passes; it stops driving panel resize during a long
