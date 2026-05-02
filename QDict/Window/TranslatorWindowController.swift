@@ -249,7 +249,7 @@ final class TranslatorWindowController {
     /// Soft-hide the panel and notify the host (AppDelegate) to open
     /// Preferences. Shared by the Cmd+, key handler and the gear button
     /// in the header.
-    fileprivate func showPreferencesAndSoftHide() {
+    func showPreferencesAndSoftHide() {
         let openPrefs = onShowPreferences
         softHide()
         openPrefs?()
