@@ -174,14 +174,9 @@ final class TranslatorWindowController {
                 return nil
             }
 
-            // Cmd+, = 43. LSUIElement apps have no main menu, so the standard
-            // Preferences shortcut never reaches a responder while the panel is
-            // key. Route it explicitly. Soft-hide first so the session is
-            // preserved if the user dismisses Preferences.
+            // Cmd+, = 43. Same path as the gear button in the header.
             if event.keyCode == 43 && mods == .command {
-                let openPrefs = self.onShowPreferences
-                self.softHide()
-                openPrefs?()
+                self.showPreferencesAndSoftHide()
                 return nil
             }
 
@@ -239,6 +234,15 @@ final class TranslatorWindowController {
             guard app?.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
             Task { @MainActor [weak self] in self?.softHide() }
         }
+    }
+
+    /// Soft-hide the panel and notify the host (AppDelegate) to open
+    /// Preferences. Shared by the Cmd+, key handler and the gear button
+    /// in the header.
+    fileprivate func showPreferencesAndSoftHide() {
+        let openPrefs = onShowPreferences
+        softHide()
+        openPrefs?()
     }
 
     private func removeDismissMonitors() {
