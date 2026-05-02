@@ -30,15 +30,10 @@ final class TranslatorWindowController {
             historyStore: historyStore
         )
         self.panel = TranslatorPanel()
-        // We previously tried NSHostingController + preferredContentSize, but that
-        // only auto-resizes for the first few layout passes during streaming and
-        // then stops propagating updates. Instead, the SwiftUI view measures its
-        // own size via a GeometryReader preference and calls back here, and we
-        // explicitly resize the panel to match.
-        // The closure passed as onShowPreferences captures self weakly. Swift
-        // requires all stored properties initialized before self can be
-        // captured, so we install a no-op closure first and replace
-        // host.rootView once init has finished assigning properties.
+        // The gear callback needs to capture self, but we cannot reference self
+        // inside the same expression that initializes our `host` stored property.
+        // Construct the hosting controller first with a no-op callback, then
+        // replace its rootView with the real callback once self is fully bound.
         let placeholderView = TranslatorContentView(
             vm: vm,
             historyStore: historyStore,
@@ -54,10 +49,10 @@ final class TranslatorWindowController {
             }
         )
 
-        // NSHostingController only auto-propagates preferredContentSize for the
-        // first few layout passes; it stops driving panel resize during a long
-        // streamed update. So we drive it explicitly: every time state or input
-        // changes, recompute the SwiftUI fitting size and apply it.
+        // We previously tried NSHostingController + preferredContentSize, but that
+        // only auto-resizes for the first few layout passes during streaming and
+        // then stops propagating updates. Instead, every time state or input
+        // changes, recompute the SwiftUI fitting size and apply it explicitly.
         let resize: () -> Void = { [weak self] in
             guard let self else { return }
             let fitting = self.host.view.fittingSize
