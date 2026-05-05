@@ -12,11 +12,21 @@ final class TranslatorViewModel: ObservableObject {
     @Published var input: String = ""
     @Published var state: State = .idle
 
+    // MARK: - Suggestion dropdown state (M1)
+    @Published var suggestions: [SuggestionItem] = []
+    @Published var selectionIndex: Int = 0
+    @Published private(set) var hasUserMovedSelection: Bool = false
+
+    var isSuggestionsVisible: Bool {
+        !suggestions.isEmpty && !isDrawerOpen
+    }
+
     private let service: TranslationService
     private let dictTemplate: String
     private let translTemplate: String
     private let historyStore: HistoryStore?
     private let historyMode: Mode
+    private let suggestionEngine: SuggestionEngine
     private var task: Task<Void, Never>?
 
     init(
@@ -24,13 +34,15 @@ final class TranslatorViewModel: ObservableObject {
         dictTemplate: String,
         translTemplate: String,
         historyStore: HistoryStore? = nil,
-        historyMode: Mode = .dictionary
+        historyMode: Mode = .dictionary,
+        suggestionEngine: SuggestionEngine = DictionaryOnlySuggestionEngine(dict: EmptyLocalDictionary())
     ) {
         self.service = service
         self.dictTemplate = dictTemplate
         self.translTemplate = translTemplate
         self.historyStore = historyStore
         self.historyMode = historyMode
+        self.suggestionEngine = suggestionEngine
     }
 
     func submit() {
