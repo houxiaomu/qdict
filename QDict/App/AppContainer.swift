@@ -31,7 +31,11 @@ final class AppContainer {
         self.historyStore = store
 
         let dict = DictionaryLoader.loadBundled()
-        let suggestionEngine = DictionaryOnlySuggestionEngine(dict: dict)
+        let storeForSnapshot = store
+        let suggestionEngine = MergedSuggestionEngine(
+            dict: dict,
+            historySnapshot: { MainActor.assumeIsolated { storeForSnapshot.entries } }
+        )
 
         self.translator = TranslatorWindowController(
             service: translationService,
