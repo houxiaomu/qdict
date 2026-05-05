@@ -30,58 +30,61 @@
 
 ### 2.1 行前缀格式
 
-每行一个字段，`|` 作分隔符，按固定顺序输出：
+每行一个字段，`|||`（三连竖线）作分隔符，按固定顺序输出：
 
 ```
-TRANS|苹果
-POS|名词
-DEF|1|一种常见、圆形的水果，外皮通常红色、绿色或黄色，果肉白色。
-DEF|2|专有名词。指 Apple Inc.，美国跨国科技公司。
-EX|She ate a crisp red apple for a snack.|她吃了一个脆红苹果当点心。
-EX|He works as a software engineer at Apple.|他在苹果公司担任软件工程师。
-SYN|fruit, orchard, iPhone, Mac
-USAGE|常与 fresh / rotten 搭配
+TRANS|||苹果
+POS|||名词
+DEF|||1|||一种常见、圆形的水果，外皮通常红色、绿色或黄色，果肉白色。
+DEF|||2|||专有名词。指 Apple Inc.，美国跨国科技公司。
+EX|||She ate a crisp red apple for a snack.|||她吃了一个脆红苹果当点心。
+EX|||He works as a software engineer at Apple.|||他在苹果公司担任软件工程师。
+SYN|||fruit, orchard, iPhone, Mac
+USAGE|||常与 fresh / rotten 搭配
 ```
+
+**为什么是 `|||` 而不是单 `|`**：自然语言、Markdown 表格、技术文档里几乎不会出现三连竖线；单 `|` 则有非零概率出现在例句或释义里（如表格、技术内容、正则）。三连让解析无需再用 `maxSplits` 控制切分次数 —— 每段独立、无歧义。
 
 ### 2.2 字段定义
 
 | 前缀 | 形式 | 必需 | 说明 |
 |---|---|---|---|
-| `WORD` | `WORD\|<source>` | 是 | 查询源词。LLM 回显，便于确认对齐 |
-| `IPA` | `IPA\|/ˈæp.əl/` | 否 | 仅英文词有；中文查询省略 |
-| `TRANS` | `TRANS\|<primary translation>` | 是 | 单一主译文 |
-| `POS` | `POS\|<part of speech>` | 是 | 多词性场景见 §2.3 |
-| `DEF` | `DEF\|<n>\|<text>` | 至少一条 | `n` 为 1 起的整数序号 |
-| `EX` | `EX\|<source>\|<translation>` | 0–3 条 | 例句源 + 译 |
-| `SYN` | `SYN\|<comma-separated>` | 否 | 近义/相关词 |
-| `USAGE` | `USAGE\|<one short sentence>` | 否 | 用法/搭配/语域 |
+| `WORD` | `WORD\|\|\|<source>` | 是 | 查询源词。LLM 回显，便于确认对齐 |
+| `IPA` | `IPA\|\|\|/ˈæp.əl/` | 否 | 仅英文词有；中文查询省略 |
+| `TRANS` | `TRANS\|\|\|<primary translation>` | 是 | 单一主译文 |
+| `POS` | `POS\|\|\|<part of speech>` | 是 | 多词性场景见 §2.3 |
+| `DEF` | `DEF\|\|\|<n>\|\|\|<text>` | 至少一条 | `n` 为 1 起的整数序号 |
+| `EX` | `EX\|\|\|<source>\|\|\|<translation>` | 0–3 条 | 例句源 + 译 |
+| `SYN` | `SYN\|\|\|<comma-separated>` | 否 | 近义/相关词 |
+| `USAGE` | `USAGE\|\|\|<one short sentence>` | 否 | 用法/搭配/语域 |
 
 ### 2.3 多词性
 
 多词性词（如 `run`，既动词又名词）使用 `SENSE` 区块分隔：
 
 ```
-WORD|run
-IPA|/rʌn/
-SENSE|动词|跑；运行；经营
-DEF|1|用脚快速移动。
-DEF|2|使（机器、程序）工作。
-DEF|3|管理或经营（业务、组织）。
-SENSE|名词|奔跑；一段时期
-DEF|1|快速移动的过程。
-EX|She runs every morning.|她每天早上跑步。
-EX|He runs a small bakery.|他经营一家小面包店。
-USAGE|"run a business" 是高频搭配。
+WORD|||run
+IPA|||/rʌn/
+SENSE|||动词|||跑；运行；经营
+DEF|||1|||用脚快速移动。
+DEF|||2|||使（机器、程序）工作。
+DEF|||3|||管理或经营（业务、组织）。
+SENSE|||名词|||奔跑；一段时期
+DEF|||1|||快速移动的过程。
+EX|||She runs every morning.|||她每天早上跑步。
+EX|||He runs a small bakery.|||他经营一家小面包店。
+USAGE|||"run a business" 是高频搭配。
 ```
 
-`SENSE|<pos>|<primary translation for this pos>` 起一个新词性块；后续 `DEF` 行属于该 sense，直到下一个 `SENSE` 或非 `DEF` 行。
+`SENSE|||<pos>|||<primary translation for this pos>` 起一个新词性块；后续 `DEF` 行属于该 sense，直到下一个 `SENSE` 或非 `DEF` 行。
 
-单词性时不出现 `SENSE`，直接走 `TRANS|...` + `POS|...` + `DEF|...` 的简化路径。
+单词性时不出现 `SENSE`，直接走 `TRANS|||...` + `POS|||...` + `DEF|||...` 的简化路径。
 
 ### 2.4 解析规则
 
-- 每行用首个 `|` 之前的前缀决定字段类型
-- 用 **`split(separator: "|", maxSplits: N)`** 提取字段：`DEF` 用 `maxSplits=2`，`EX` / `SENSE` 用 `maxSplits=2`，单字段如 `TRANS` 用 `maxSplits=1`
+- 用 **`line.components(separatedBy: "|||")`** 切段；首段为前缀
+- `DEF` 期望 3 段（`DEF`, `n`, `text`）；`EX` / `SENSE` 期望 3 段；单字段如 `TRANS` / `POS` / `IPA` / `WORD` / `SYN` / `USAGE` 期望 2 段
+- 段数不符的行整行丢弃（容错）
 - 未识别的前缀（包括空白行、LLM 多输出的"啰嗦"）整行丢弃
 - 字段顺序遵循约定，但 parser 不强校验顺序 —— 任意顺序都能解析
 
@@ -209,31 +212,36 @@ struct StructuredStreamParser {
 
 ```
 对每一 line：
-  trim 前后空白
-  按首个 "|" 切前缀
+  trim 前后空白；空行丢弃
+  let parts = line.components(separatedBy: "|||")
+  guard parts.count >= 2 else { return }   // 无分隔符的行丢弃
+  let prefix = parts[0]
   switch prefix {
-    case "WORD":  result.word = rest
-    case "IPA":   result.ipa = rest
-    case "TRANS": result.primaryTranslation = rest
-    case "POS":   result.primaryPOS = rest
-    case "SENSE":
-      // SENSE|<pos>|<primary?>
-      let parts = rest.split(maxSplits: 1)
-      append new Sense; currentSenseIndex = senses.count - 1
-    case "DEF":
-      // DEF|<n>|<text>
-      解析 n 与 text
+    case "WORD"  where parts.count == 2: result.word = parts[1]
+    case "IPA"   where parts.count == 2: result.ipa = parts[1]
+    case "TRANS" where parts.count == 2: result.primaryTranslation = parts[1]
+    case "POS"   where parts.count == 2: result.primaryPOS = parts[1]
+    case "SENSE" where parts.count == 3:
+      // SENSE|||<pos>|||<primary>
+      result.senses.append(Sense(pos: parts[1], primary: parts[2], definitions: []))
+      currentSenseIndex = result.senses.count - 1
+    case "DEF" where parts.count == 3:
+      // DEF|||<n>|||<text>
+      guard let n = Int(parts[1]) else { return }
+      let def = Definition(n: n, text: parts[2])
       if let idx = currentSenseIndex {
-        result.senses[idx].definitions.append(...)
+        result.senses[idx].definitions.append(def)
       } else {
-        // 单词性：DEF 之间有顺序但 model 没承载，用 senses[0]?
-        // 决定：单词性也存到一个隐式 sense，但 View 看 primaryTranslation 是否为非空决定走单词性渲染
-        // → 见 §5.3
+        result.flatDefinitions.append(def)   // 单词性路径
       }
-    case "EX":    result.examples.append(...)
-    case "SYN":   result.synonyms = rest.split(",").map(trim)
-    case "USAGE": result.usage = rest
-    default:      ignore
+    case "EX" where parts.count == 3:
+      result.examples.append(Example(source: parts[1], translation: parts[2]))
+    case "SYN" where parts.count == 2:
+      result.synonyms = parts[1].split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+    case "USAGE" where parts.count == 2:
+      result.usage = parts[1]
+    default:
+      return  // 未知前缀或字段数不符：丢弃
   }
 ```
 
@@ -248,7 +256,7 @@ struct StructuredStreamParser {
 ### 5.4 容错
 
 - 未知前缀的行：丢弃，**不报错**
-- 字段格式异常（如 `DEF|abc|text` 中 n 不是数字）：丢弃该行，继续
+- 字段格式异常（如 `DEF|||abc|||text` 中 n 不是数字）：丢弃该行，继续
 - UTF-8 跨 chunk 边界：`String += String` 在 Swift 中不会破坏 grapheme，安全
 - 流式被取消：parser 状态丢弃即可，无需清理
 
@@ -261,7 +269,7 @@ struct StructuredStreamParser {
 - ✅ 单词性、多词性各一组
 - ✅ 中→英方向
 - ✅ 缺 IPA / SYN / USAGE 的极简词
-- ✅ 含 `|` 的释义文本（验证 `maxSplits` 正确）
+- ✅ 含单 `|` 或双 `||` 的释义文本（验证 `|||` 三连不会被误切）
 - ✅ 未知前缀混入（验证容错）
 - ✅ `flush()` 处理无尾换行
 - ✅ Empty input
@@ -429,7 +437,7 @@ case .streaming, .done:
 | 风险 | 缓解 |
 |---|---|
 | LLM 不严格遵守行前缀格式 | Prompt 给 6+ 示例；parser 容错跳过非法行；首版上线后采集 raw 输出统计违规率 |
-| `\|` 出现在内容里把字段切错 | `maxSplits` 控制只切前 N 个 `\|`，尾部保留；释义/例句里出现 `\|` 概率极低 |
+| 分隔符出现在内容里把字段切错 | 选用 `\|\|\|` 三连竖线作分隔符，自然语言/Markdown/代码里几乎不会出现；parser 用 `components(separatedBy:)` 切段，段数不符的行整行丢弃 |
 | 多词性的 SENSE 区块解析复杂 | Parser 维护 `currentSenseIndex` 单状态，逻辑清晰可测 |
 | 历史里旧 Markdown 记录打不开 | `isEmpty` fallback 自动走旧渲染路径 |
 | Prompt 改后 LLM 回归质量下降 | spec 通过后实施时与旧 prompt 对照测试 5 个常见词，确保解释质量不退步 |
