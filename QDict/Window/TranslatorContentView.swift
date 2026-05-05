@@ -13,6 +13,11 @@ final class TranslatorViewModel: ObservableObject {
     @Published var input: String = ""
     @Published var state: State = .idle
 
+    // MARK: - Structured dictionary result (M3)
+    @Published private(set) var dictionaryResult: DictionaryResult = DictionaryResult()
+    @Published private(set) var lastRequestMode: Mode = .dictionary
+    private var parser = StructuredStreamParser()
+
     // MARK: - Suggestion dropdown state (M1)
     @Published var suggestions: [SuggestionItem] = []
     @Published var selectionIndex: Int = 0
@@ -118,13 +123,25 @@ final class TranslatorViewModel: ObservableObject {
             dictionaryTemplate: dictTemplate,
             translationTemplate: translTemplate
         )
+        let requestMode = prompt.mode
+        lastRequestMode = requestMode
+        if requestMode == .dictionary {
+            parser = StructuredStreamParser()
+            dictionaryResult = DictionaryResult()
+        }
         task = Task { [weak self] in
             guard let self else { return }
             var buffer = ""
             do {
                 for try await token in self.service.translate(systemPrompt: prompt.systemPrompt, userText: text) {
                     buffer += token
+                    if requestMode == .dictionary {
+                        self.dictionaryResult = self.parser.feed(token)
+                    }
                     self.state = .streaming(buffer)
+                }
+                if requestMode == .dictionary {
+                    self.dictionaryResult = self.parser.flush()
                 }
                 self.state = .done(buffer)
                 self.historyStore?.append(query: text, result: buffer, mode: self.historyMode)
@@ -144,6 +161,8 @@ final class TranslatorViewModel: ObservableObject {
         task?.cancel()
         input = ""
         state = .idle
+        parser = StructuredStreamParser()
+        dictionaryResult = DictionaryResult()
     }
 
     // MARK: - Session snapshot (soft-hide / restore)
@@ -165,6 +184,14 @@ final class TranslatorViewModel: ObservableObject {
         task?.cancel()
         input = entry.query
         state = .done(entry.result)
+        lastRequestMode = entry.mode
+        if entry.mode == .dictionary {
+            parser = StructuredStreamParser()
+            _ = parser.feed(entry.result)
+            dictionaryResult = parser.flush()
+        } else {
+            dictionaryResult = DictionaryResult()
+        }
     }
 
     // MARK: - History drawer state
