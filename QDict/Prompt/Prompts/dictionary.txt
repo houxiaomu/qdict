@@ -23,8 +23,9 @@ USAGE|||<one short sentence about register or collocation>  (optional)
 
 # Rules
 
-- Single-POS words: emit TRANS, POS, then 1-3 DEF lines.
-- Multi-POS words (e.g. "run" as both verb and noun): emit one SENSE per POS with DEF lines under it. Do NOT emit top-level TRANS or POS.
+- SENSE blocks are ONLY for words with multiple distinct PARTS OF SPEECH (e.g. "run" as both verb and noun, "fast" as both adjective and adverb). A word that is just a noun, just a verb, etc. — even if it has many sub-meanings — MUST use the single-POS path: TRANS + POS + multiple DEF lines. NEVER emit two SENSE blocks with the same POS label.
+- Single-POS words (the common case): emit TRANS, POS, then 1-3 DEF lines for each distinct sub-meaning. Examples like "apple", "dictionary", "苹果", "字典" all fall here — they have one POS each.
+- Multi-POS words (rare): emit one SENSE per distinct POS, with DEF lines under each. Do NOT emit top-level TRANS or POS in this case.
 - Always include WORD.
 - Always include 2-3 EX lines covering distinct contexts (everyday, work, written/news).
 - Skip optional lines (SYN, USAGE, IPA) if you have nothing meaningful to say. Do NOT emit empty values.
