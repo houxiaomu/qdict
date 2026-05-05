@@ -18,7 +18,9 @@ struct StructuredStreamParser {
     @discardableResult
     mutating func feed(_ chunk: String) -> DictionaryResult {
         buffer += chunk
-        while let nlRange = buffer.range(of: "\n") {
+        // Note: in Swift "\r\n" is a single grapheme cluster, so
+        // range(of: "\n") returns nil for CRLF input. Try CRLF first.
+        while let nlRange = buffer.range(of: "\r\n") ?? buffer.range(of: "\n") {
             let line = String(buffer[..<nlRange.lowerBound])
             buffer.removeSubrange(buffer.startIndex..<nlRange.upperBound)
             consume(line: line)
@@ -52,6 +54,24 @@ struct StructuredStreamParser {
             result.primaryPOS = parts[1]
         case "USAGE" where parts.count == 2:
             result.usage = parts[1]
+        case "SENSE" where parts.count == 3:
+            result.senses.append(Sense(pos: parts[1], primary: parts[2], definitions: []))
+            currentSenseIndex = result.senses.count - 1
+        case "DEF" where parts.count == 3:
+            guard let n = Int(parts[1]) else { return }
+            let def = Definition(n: n, text: parts[2])
+            if let idx = currentSenseIndex {
+                result.senses[idx].definitions.append(def)
+            } else {
+                result.flatDefinitions.append(def)
+            }
+        case "EX" where parts.count == 3:
+            result.examples.append(Example(source: parts[1], translation: parts[2]))
+        case "SYN" where parts.count == 2:
+            result.synonyms = parts[1]
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
         default:
             return
         }
