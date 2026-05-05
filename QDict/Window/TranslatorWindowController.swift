@@ -16,6 +16,7 @@ final class TranslatorWindowController {
     private var inputSubscription: AnyCancellable?
     private var drawerSubscription: AnyCancellable?
     private var historySubscription: AnyCancellable?
+    private var suggestionsSubscription: AnyCancellable?
 
     /// Called when the user presses Cmd+, while the panel is key. Lets the app
     /// delegate open Preferences without relying on the (absent) main menu.
@@ -69,6 +70,9 @@ final class TranslatorWindowController {
             .receive(on: RunLoop.main)
             .sink { _ in resize() }
         historySubscription = historyStore.$entries
+            .receive(on: RunLoop.main)
+            .sink { _ in resize() }
+        suggestionsSubscription = vm.$suggestions
             .receive(on: RunLoop.main)
             .sink { _ in resize() }
     }
@@ -156,55 +160,73 @@ final class TranslatorWindowController {
             guard let self else { return event }
             let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.numericPad)
 
-            // Esc = 53. Drawer-open: close drawer; otherwise: hard hide.
+            // ── Esc = 53 ──
+            // Priority: drawer → suggestion-cancel → hardHide.
             if event.keyCode == 53 {
                 if self.vm.isDrawerOpen {
                     self.vm.closeDrawer()
+                    return nil
+                }
+                if self.vm.cancelSuggestionSelection() {
+                    return nil  // user-moved selection cancelled; dropdown stays
+                }
+                self.hardHide()
+                return nil
+            }
+
+            // ── Return = 36 ──
+            if event.keyCode == 36 && mods.isEmpty {
+                if self.vm.isDrawerOpen {
+                    self.vm.confirmSelection(history: self.historyStore)
                 } else {
-                    self.hardHide()
+                    self.vm.submitOrUseSelected()
                 }
                 return nil
             }
 
-            // Return = 36. In drawer: confirm. Otherwise: submit.
-            if event.keyCode == 36 {
-                if mods.isEmpty {
-                    if self.vm.isDrawerOpen {
-                        self.vm.confirmSelection(history: self.historyStore)
-                    } else {
-                        self.vm.submit()
-                    }
+            // ── Tab = 48 ──  Suggestions-only; otherwise let system handle.
+            if event.keyCode == 48 && mods.isEmpty {
+                if !self.vm.isDrawerOpen && self.vm.isSuggestionsVisible {
+                    self.vm.acceptSuggestionForCompletion()
                     return nil
                 }
+                return event
             }
 
-            // Cmd+Y = 16. Toggle drawer.
+            // ── Cmd+Y = 16. Toggle drawer ──
             if event.keyCode == 16 && mods == .command {
                 self.vm.toggleDrawer(history: self.historyStore)
                 return nil
             }
 
-            // Cmd+, = 43. Same path as the gear button in the header.
+            // ── Cmd+, = 43. Preferences ──
             if event.keyCode == 43 && mods == .command {
                 self.showPreferencesAndSoftHide()
                 return nil
             }
 
-            // Cmd+↑ = 126, Cmd+↓ = 125.
+            // ── Cmd+↑/↓ ── always history, even when drawer closed.
             if mods == .command && (event.keyCode == 126 || event.keyCode == 125) {
                 let delta = (event.keyCode == 126) ? -1 : 1
                 self.vm.moveSelection(in: self.historyStore, by: delta)
                 return nil
             }
 
-            // ↑ / ↓ inside drawer (no modifiers).
-            if self.vm.isDrawerOpen && mods.isEmpty && (event.keyCode == 126 || event.keyCode == 125) {
+            // ── ↑/↓ no mods ── drawer wins; else suggestion dropdown; else system.
+            if mods.isEmpty && (event.keyCode == 126 || event.keyCode == 125) {
                 let delta = (event.keyCode == 126) ? -1 : 1
-                self.vm.moveSelection(in: self.historyStore, by: delta)
-                return nil
+                if self.vm.isDrawerOpen {
+                    self.vm.moveSelection(in: self.historyStore, by: delta)
+                    return nil
+                }
+                if self.vm.isSuggestionsVisible {
+                    self.vm.moveSuggestionSelection(by: delta)
+                    return nil
+                }
+                return event
             }
 
-            // Backspace / Delete = 51 / 117 inside drawer.
+            // ── Backspace / Delete inside drawer ──
             if self.vm.isDrawerOpen && (event.keyCode == 51 || event.keyCode == 117) {
                 self.vm.deleteSelection(history: self.historyStore)
                 return nil
