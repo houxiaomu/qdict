@@ -75,7 +75,40 @@ final class TranslatorViewModel: ObservableObject {
         hasUserMovedSelection = false
     }
 
+    func moveSuggestionSelection(by delta: Int) {
+        guard isSuggestionsVisible else { return }
+        let next = max(0, min(suggestions.count - 1, selectionIndex + delta))
+        selectionIndex = next
+        hasUserMovedSelection = true
+    }
+
+    func acceptSuggestionForCompletion() {
+        guard isSuggestionsVisible else { return }
+        let item = suggestions[selectionIndex]
+        input = item.word
+        hasUserMovedSelection = false
+    }
+
+    func submitOrUseSelected() {
+        if isSuggestionsVisible && hasUserMovedSelection {
+            let item = suggestions[selectionIndex]
+            input = item.word
+        }
+        submit()
+    }
+
+    @discardableResult
+    func cancelSuggestionSelection() -> Bool {
+        guard isSuggestionsVisible && hasUserMovedSelection else { return false }
+        selectionIndex = 0
+        hasUserMovedSelection = false
+        return true
+    }
+
     func submit() {
+        suggestions = []
+        selectionIndex = 0
+        hasUserMovedSelection = false
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         task?.cancel()
@@ -105,6 +138,9 @@ final class TranslatorViewModel: ObservableObject {
     }
 
     func reset() {
+        suggestions = []
+        selectionIndex = 0
+        hasUserMovedSelection = false
         task?.cancel()
         input = ""
         state = .idle
