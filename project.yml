@@ -28,6 +28,8 @@ targets:
         LSUIElement: true
         CFBundleDisplayName: QDict
         NSHumanReadableCopyright: "© 2026"
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     entitlements:
       path: QDict/Resources/QDict.entitlements
       properties:
