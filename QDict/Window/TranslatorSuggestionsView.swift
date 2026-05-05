@@ -1,5 +1,31 @@
 import SwiftUI
 
+/// Container that renders the suggestion dropdown when ``vm.isSuggestionsVisible``
+/// is true. Click-to-pick goes straight to submit (skips the
+/// ``hasUserMovedSelection`` flag — the click is itself an explicit pick).
+struct TranslatorSuggestionsView: View {
+    @ObservedObject var vm: TranslatorViewModel
+
+    var body: some View {
+        if vm.isSuggestionsVisible {
+            VStack(spacing: 0) {
+                ForEach(Array(vm.suggestions.enumerated()), id: \.element.id) { index, item in
+                    SuggestionRow(
+                        item: item,
+                        isSelected: index == vm.selectionIndex,
+                        prefix: vm.input
+                    )
+                    .onTapGesture {
+                        vm.selectionIndex = index
+                        vm.input = vm.suggestions[index].word
+                        vm.submit()
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// One row in the suggestion dropdown. Pure render — no logic.
 struct SuggestionRow: View {
     let item: SuggestionItem

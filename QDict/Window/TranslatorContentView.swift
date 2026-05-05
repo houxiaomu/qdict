@@ -233,6 +233,10 @@ struct TranslatorContentView: View {
             TranslatorHeaderView(onSettings: onShowPreferences)
             themedDivider
             TranslatorInputView(vm: vm, isFocused: $inputFocused)
+            if vm.isSuggestionsVisible {
+                themedDivider
+                TranslatorSuggestionsView(vm: vm)
+            }
             themedDivider
             TranslatorHintsView()
             resultSection
