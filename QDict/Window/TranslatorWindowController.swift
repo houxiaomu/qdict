@@ -165,7 +165,7 @@ final class TranslatorWindowController {
 
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else { return event }
-            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.numericPad)
+            let mods = event.modifierFlags.userPressedOnly
 
             // ── Esc = 53 ──
             // Priority: drawer → suggestion-cancel → hardHide.
