@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 @MainActor
 final class TranslatorViewModel: ObservableObject {
@@ -28,6 +29,7 @@ final class TranslatorViewModel: ObservableObject {
     private let historyMode: Mode
     private let suggestionEngine: SuggestionEngine
     private var task: Task<Void, Never>?
+    private var inputObserver: AnyCancellable?
 
     init(
         service: TranslationService,
@@ -43,6 +45,34 @@ final class TranslatorViewModel: ObservableObject {
         self.historyStore = historyStore
         self.historyMode = historyMode
         self.suggestionEngine = suggestionEngine
+        bindInput()
+    }
+
+    private func bindInput() {
+        inputObserver = $input
+            .removeDuplicates()
+            .sink { [weak self] s in self?.refreshSuggestions(for: s) }
+    }
+
+    func refreshSuggestions(for raw: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isASCII = trimmed.allSatisfy { $0.isASCII }
+        let endsWithSpace: Bool
+        if let last = raw.last { endsWithSpace = (last == " " || last == "\t") } else { endsWithSpace = false }
+        let isStreaming: Bool
+        if case .streaming = state { isStreaming = true } else { isStreaming = false }
+
+        if trimmed.count < 2 || !isASCII || endsWithSpace || isStreaming {
+            suggestions = []
+            selectionIndex = 0
+            hasUserMovedSelection = false
+            return
+        }
+
+        let items = suggestionEngine.query(trimmed.lowercased(), limit: 6)
+        suggestions = items
+        selectionIndex = 0
+        hasUserMovedSelection = false
     }
 
     func submit() {
