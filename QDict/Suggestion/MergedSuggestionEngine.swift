@@ -43,34 +43,66 @@ struct MergedSuggestionEngine: SuggestionEngine {
             historyByLower[lower] = entry
         }
 
-        var items: [SuggestionItem] = []
+        // Final score: dict-frequency component plus a recency bonus that
+        // decays with a 7-day half-life (see spec §6.3). The α coefficient
+        // is calibrated so a today-fresh history hit can lift a mid-frequency
+        // word ahead of a top-tier dict word.
+        struct Scored {
+            let item: SuggestionItem
+            let score: Double
+        }
+
+        let nowDate = now()
+
+        func dictScore(forCocaRank coca: Int) -> Double {
+            let clamped = min(coca, 10000)
+            return Double(10000 - clamped) / 1000.0
+        }
+        func historyBonus(daysSince days: Double) -> Double {
+            return 5.0 * exp(-days / 7.0)
+        }
+
+        var scored: [Scored] = []
         var seenLower = Set<String>()
 
         for e in dictHits {
             let lower = e.word.lowercased()
             seenLower.insert(lower)
-            let isRecent = historyByLower[lower] != nil
-            items.append(SuggestionItem(
+            let recentEntry = historyByLower[lower]
+            let bonus: Double
+            if let entry = recentEntry {
+                let days = nowDate.timeIntervalSince(entry.timestamp) / 86400.0
+                bonus = historyBonus(daysSince: max(0, days))
+            } else {
+                bonus = 0
+            }
+            let item = SuggestionItem(
                 id: lower,
                 kind: .dictionary,
                 word: e.word,
                 pos: e.pos,
                 gloss: e.gloss,
-                badge: isRecent ? .recent : .none
-            ))
+                badge: recentEntry == nil ? .none : .recent
+            )
+            scored.append(Scored(item: item, score: dictScore(forCocaRank: e.cocaRank) + bonus))
         }
 
         for (lower, entry) in historyByLower where !seenLower.contains(lower) {
-            items.append(SuggestionItem(
+            let days = nowDate.timeIntervalSince(entry.timestamp) / 86400.0
+            let item = SuggestionItem(
                 id: lower,
                 kind: .history,
                 word: entry.query,
                 pos: nil,
                 gloss: "",
                 badge: .recent
-            ))
+            )
+            scored.append(Scored(item: item, score: historyBonus(daysSince: max(0, days))))
         }
 
-        return items
+        return scored
+            .sorted { $0.score > $1.score }
+            .prefix(limit)
+            .map(\.item)
     }
 }
