@@ -23,12 +23,47 @@ import sys
 
 GLOSS_MAX = 80
 
+# A part-of-speech token at the head of a translation looks like one of these,
+# always followed by a space. ECDICT uses both "a." and "adj.", "n." and "noun"
+# is rare. Listing the long forms first matters because we're prefix-matching.
+POS_TOKENS = (
+    "adj.", "adv.", "prep.", "conj.", "pron.", "num.", "art.", "interj.",
+    "aux.", "abbr.",
+    "vt.", "vi.", "vd.",
+    "n.", "v.", "a.", "i.",
+)
+
 
 def normalize_gloss(raw: str) -> str:
-    g = raw.replace("\r", "").replace("\n", "；").strip()
+    """Collapse multi-line ECDICT translations onto one line.
+
+    ECDICT stores newlines as the literal two-character sequence ``\\n``
+    rather than a real newline, plus occasional real newlines if the export
+    differs. Handle both, and clamp to ``GLOSS_MAX`` characters.
+    """
+    g = raw.replace("\r", "").replace("\\n", "；").replace("\n", "；").strip()
+    # Collapse runs of separators created when the body started with a newline.
+    while "；；" in g:
+        g = g.replace("；；", "；")
+    g = g.strip("； ").strip()
     if len(g) > GLOSS_MAX:
         g = g[: GLOSS_MAX - 1] + "…"
     return g
+
+
+def split_pos_and_gloss(translation_normalized: str):
+    """Pull a leading POS token off the front of the gloss.
+
+    ECDICT only fills the dedicated ``pos`` column for a small minority of
+    rows; for everyone else, the part-of-speech is the first token of the
+    translation, e.g. ``"n. 苹果, 家伙"``. Splitting it lets the UI render
+    it in italics separate from the gloss body, matching the mockup.
+    """
+    s = translation_normalized
+    for tok in POS_TOKENS:
+        if s.startswith(tok + " "):
+            return tok, s[len(tok) + 1 :].lstrip()
+    return None, s
 
 
 def normalize_pos(raw: str):
@@ -37,29 +72,46 @@ def normalize_pos(raw: str):
 
 
 def parse_int(raw: str):
+    """ECDICT uses 0 to mean "no rank / not in this corpus" rather than
+    "ranked at position zero". Treat empty and 0 the same — both as None —
+    so downstream filtering and sorting do the right thing.
+    """
     s = (raw or "").strip()
     if not s:
         return None
     try:
-        return int(s)
+        v = int(s)
     except ValueError:
         return None
+    return v if v > 0 else None
 
 
 def should_keep(word: str, translation: str, frq, collins, oxford) -> bool:
+    """Filter rules.
+
+    Quality signals are: frq (COCA rank ≤ 15000), collins (any star), or
+    oxford (== 1). At least one must be present. The corpus normalizes
+    ``frq=0``/``collins=''`` to ``None`` upstream.
+
+    Capitalized words are accepted *only when they carry a quality signal* —
+    that admits curated entries like "Epiphany" (the holiday) while still
+    rejecting the long tail of personal/place names that have no rank.
+    Skipping the capital filter entirely would drag in tens of thousands of
+    proper nouns like ``Epipactis`` (a plant genus) which the user is very
+    unlikely to be searching for in a translator panel.
+    """
     if not word or not translation:
-        return False
-    if word[0].isupper():
         return False
     if "_" in word:
         return False
-    if frq is not None and frq <= 15000:
-        return True
-    if collins is not None and collins >= 1:
-        return True
-    if oxford == 1:
-        return True
-    return False
+    has_signal = (
+        (frq is not None and frq <= 15000)
+        or (collins is not None and collins >= 1)
+        or (oxford == 1)
+    )
+    if not has_signal:
+        return False
+    return True
 
 
 def build(csv_path: str, sqlite_path: str) -> None:
@@ -104,14 +156,18 @@ def build(csv_path: str, sqlite_path: str) -> None:
                 skipped += 1
                 continue
             seen_lower.add(lower)
+            gloss = normalize_gloss(translation)
+            pos = normalize_pos(row.get("pos", ""))
+            if pos is None:
+                pos, gloss = split_pos_and_gloss(gloss)
             conn.execute(
                 "INSERT INTO entries (word, display, pos, gloss, coca, collins) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
                 (
                     lower,
                     word,
-                    normalize_pos(row.get("pos", "")),
-                    normalize_gloss(translation),
+                    pos,
+                    gloss,
                     frq,
                     collins,
                 ),

@@ -107,16 +107,17 @@ TranslatorSuggestionsView 渲染 vm.suggestions / vm.selectionIndex
 
 源：ECDICT free 版（公开 GitHub、MIT），其 CSV 含 `word, phonetic, definition, translation, pos, collins, oxford, tag, bnc, frq, exchange, detail, audio`。
 
-筛规则（构建脚本 `scripts/build-dictionary.swift`）：
+筛规则（构建脚本 `scripts/build-dictionary.py`）：
 
 ```
-keep if (frq <= 15000) OR (collins >= 1) OR (oxford == 1)
-exclude if word starts with capital letter      // 过滤专名
-exclude if word contains '_'                    // 过滤 ECDICT 的内部标记词条
+keep if (frq <= 15000) OR (collins >= 1) OR (oxford == 1)   // ≥1 个质量信号
+exclude if word contains '_'                                 // ECDICT 内部标记词条
 exclude if translation is empty
+note: frq == 0 在 ECDICT 里表示"未被 COCA 收录"——视为缺失（None），不当成"第 0 名"
+note: 首字母大写的词跟其他词同等对待（也必须满足质量信号）。靠信号本身就能挡住绝大多数专名长尾，比单独用大小写规则更准
 ```
 
-预计 12–18 万条；bundle 大小目标 5–8 MB（含 SQLite 索引）。
+实际入库 ~16,800 条；bundle ~1.6 MB。比 spec 起草时预估的 5-8 MB / 12-18 万条小很多——原估算高估了 ECDICT 实际带词频/Collins 信号的词条覆盖度。当前规模已经覆盖了 COCA top 15k + Collins 5 星词，对"输入即出"的核心场景足够；如果后期发现某些用户常查词不在内，可考虑把 frq 门槛放宽到 25k 或纳入 BNC 词频。
 
 ### 5.2 SQLite Schema
 
