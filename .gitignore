@@ -20,3 +20,6 @@ Package.resolved
 
 # Claude Code agent state
 .claude/
+
+# Local dictionary build inputs (raw ECDICT CSV; produced sqlite is committed)
+external_data/
