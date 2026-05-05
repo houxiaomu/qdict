@@ -30,11 +30,15 @@ final class AppContainer {
         let store = HistoryStore(fileURL: url, limit: 50)
         self.historyStore = store
 
+        let dict = DictionaryLoader.loadBundled()
+        let suggestionEngine = DictionaryOnlySuggestionEngine(dict: dict)
+
         self.translator = TranslatorWindowController(
             service: translationService,
             dictTemplate: dictTemplate,
             translTemplate: translTemplate,
-            historyStore: store
+            historyStore: store,
+            suggestionEngine: suggestionEngine
         )
     }
 }

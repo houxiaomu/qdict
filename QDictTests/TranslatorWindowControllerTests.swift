@@ -22,7 +22,8 @@ final class TranslatorWindowControllerTests: XCTestCase {
             service: svc,
             dictTemplate: "{{text}}",
             translTemplate: "{{text}}",
-            historyStore: history
+            historyStore: history,
+            suggestionEngine: DictionaryOnlySuggestionEngine(dict: EmptyLocalDictionary())
         )
     }
 

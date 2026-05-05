@@ -22,13 +22,20 @@ final class TranslatorWindowController {
     /// delegate open Preferences without relying on the (absent) main menu.
     var onShowPreferences: (() -> Void)?
 
-    init(service: TranslationService, dictTemplate: String, translTemplate: String, historyStore: HistoryStore) {
+    init(
+        service: TranslationService,
+        dictTemplate: String,
+        translTemplate: String,
+        historyStore: HistoryStore,
+        suggestionEngine: SuggestionEngine
+    ) {
         self.historyStore = historyStore
         self.vm = TranslatorViewModel(
             service: service,
             dictTemplate: dictTemplate,
             translTemplate: translTemplate,
-            historyStore: historyStore
+            historyStore: historyStore,
+            suggestionEngine: suggestionEngine
         )
         self.panel = TranslatorPanel()
         // The gear callback needs to capture self, but we cannot reference self
