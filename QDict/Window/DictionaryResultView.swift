@@ -6,26 +6,27 @@ struct DictionaryResultView: View {
     private static let labelColor = Color.secondary.opacity(0.7)
     private static let accentColor = Color(red: 0.77, green: 0.47, blue: 0.23)
 
+    // No ScrollView: dictionary output is bounded by the prompt
+    // (1-3 defs, 2-3 examples, ≤4 synonyms, 1 usage line), so the panel
+    // can grow with content. Scrollbars are reserved gutter even when
+    // not needed and clash with the "concise dictionary" feel.
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                headerRow
-                if result.senses.isEmpty {
-                    primaryRow
-                    flatDefinitionsBlock
-                } else {
-                    sensesBlock
-                }
-                examplesBlock
-                synonymsBlock
-                usageBlock
+        VStack(alignment: .leading, spacing: 0) {
+            headerRow
+            if result.senses.isEmpty {
+                primaryRow
+                flatDefinitionsBlock
+            } else {
+                sensesBlock
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 14)
-            .padding(.bottom, 18)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            examplesBlock
+            synonymsBlock
+            usageBlock
         }
-        .frame(maxHeight: 360)
+        .padding(.horizontal, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Sections
