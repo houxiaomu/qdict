@@ -21,6 +21,7 @@ targets:
     resources:
       - path: QDict/Prompt/Prompts
       - path: QDict/Resources/Assets.xcassets
+      - path: QDict/Dictionary/Resources/ecdict.sqlite
     info:
       path: QDict/Resources/Info.plist
       properties:
