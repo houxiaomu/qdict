@@ -289,16 +289,17 @@ struct TranslatorContentView: View {
         case .streaming(let s), .done(let s):
             VStack(alignment: .leading, spacing: 0) {
                 themedDivider
-                ScrollView {
-                    Text(LocalizedStringKey(s))
-                        .font(.system(size: 13))
-                        .lineSpacing(2)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                if vm.lastRequestMode == .dictionary && !vm.dictionaryResult.isEmpty {
+                    DictionaryResultView(result: vm.dictionaryResult)
+                } else if vm.lastRequestMode == .dictionary, case .streaming = vm.state {
+                    // Dictionary request still streaming but parser hasn't yielded
+                    // any field yet — show spinner instead of raw prefix-line text.
+                    ProgressView().controlSize(.small)
+                        .padding(.vertical, 8)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                } else {
+                    legacyMarkdownView(s)
                 }
-                .frame(maxHeight: 320)
             }
         case .error(let msg):
             VStack(alignment: .leading, spacing: 0) {
@@ -310,6 +311,19 @@ struct TranslatorContentView: View {
                     .padding(.vertical, 10)
             }
         }
+    }
+
+    private func legacyMarkdownView(_ s: String) -> some View {
+        ScrollView {
+            Text(LocalizedStringKey(s))
+                .font(.system(size: 13))
+                .lineSpacing(2)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+        }
+        .frame(maxHeight: 320)
     }
 
     // MARK: - History drawer section (preserved)
