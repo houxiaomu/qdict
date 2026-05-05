@@ -39,4 +39,17 @@ enum TranslatorTheme {
     static let headerIconSize: CGFloat = 24
     static let clearButtonSize: CGFloat = 16
     static let touchTargetSize: CGFloat = 28
+
+    // MARK: - Suggestion dropdown (M1)
+
+    /// Brand accent — reuses the warm clear-button hue for selection bar/icon.
+    static var accentColor: Color { Color("ClearButtonFill") }
+    /// Background of an unselected dictionary-row icon.
+    static var iconNeutralFill: Color { Color.secondary.opacity(0.5) }
+    /// Pill background for the "最近" recency badge.
+    static var badgeFill: Color { Color.secondary.opacity(0.18) }
+    /// Selected row background tint.
+    static var selectionRowFill: Color { Color("ClearButtonFill").opacity(0.10) }
+
+    static let suggestionRowHeight: CGFloat = 44
 }
