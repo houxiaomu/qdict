@@ -4,7 +4,7 @@ Build QDict's bundled English dictionary from ECDICT CSV.
 
 Usage:
     python3 scripts/build-dictionary.py /path/to/ecdict.csv \
-        QDict/Dictionary/Resources/ecdict.sqlite
+        shared/dictionary/ecdict.sqlite
 
 Source: https://github.com/skywind3000/ECDICT — use the "ECDICT" or
 "ECDICT_FREE" CSV release. License is MIT.

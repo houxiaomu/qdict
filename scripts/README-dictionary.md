@@ -1,7 +1,7 @@
 # Dictionary build
 
 QDict ships an offline English dictionary at
-`QDict/Dictionary/Resources/ecdict.sqlite`. It is generated from
+`shared/dictionary/ecdict.sqlite`. It is generated from
 [ECDICT](https://github.com/skywind3000/ECDICT) (MIT) by
 `scripts/build-dictionary.py`.
 
@@ -12,7 +12,7 @@ QDict ships an offline English dictionary at
 
    ```bash
    python3 scripts/build-dictionary.py /path/to/ecdict.csv \
-       QDict/Dictionary/Resources/ecdict.sqlite
+       shared/dictionary/ecdict.sqlite
    ```
 
 3. Commit the regenerated `ecdict.sqlite` alongside any related changes.

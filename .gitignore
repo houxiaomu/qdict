@@ -22,7 +22,7 @@ Package.resolved
 .claude/
 
 # Local dictionary build inputs (raw ECDICT CSV; produced sqlite is committed)
-external_data/
+shared/dictionary/ecdict.csv
 
 # Brainstorm visual companion artifacts
 .superpowers/

@@ -5,7 +5,7 @@ QDict bundles the following third-party data:
 ## ECDICT (https://github.com/skywind3000/ECDICT)
 
 A subset of the ECDICT free English-Chinese dictionary is bundled at
-`Dictionary/Resources/ecdict.sqlite` and used to power the input
+`shared/dictionary/ecdict.sqlite` and used to power the input
 suggestion dropdown.
 
 License: MIT.

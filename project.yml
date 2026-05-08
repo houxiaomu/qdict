@@ -17,13 +17,15 @@ targets:
     platform: macOS
     deploymentTarget: "13.0"
     sources:
-      - path: QDict
+      - path: macos/QDict
+      - path: shared/prompts
+        buildPhase: resources
+      - path: shared/dictionary/ecdict.sqlite
+        buildPhase: resources
     resources:
-      - path: QDict/Prompt/Prompts
-      - path: QDict/Resources/Assets.xcassets
-      - path: QDict/Dictionary/Resources/ecdict.sqlite
+      - path: macos/QDict/Resources/Assets.xcassets
     info:
-      path: QDict/Resources/Info.plist
+      path: macos/QDict/Resources/Info.plist
       properties:
         LSUIElement: true
         CFBundleDisplayName: QDict
@@ -31,7 +33,7 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
     entitlements:
-      path: QDict/Resources/QDict.entitlements
+      path: macos/QDict/Resources/QDict.entitlements
       properties:
         com.apple.security.app-sandbox: false
         com.apple.security.network.client: true
@@ -61,7 +63,7 @@ targets:
     platform: macOS
     deploymentTarget: "13.0"
     sources:
-      - path: QDictTests
+      - path: macos/QDictTests
     dependencies:
       - target: QDict
     settings:
