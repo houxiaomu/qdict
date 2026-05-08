@@ -4,10 +4,17 @@ import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
-    let container = AppContainer()
+    // Built in applicationDidFinishLaunching, not as a stored-property
+    // initializer. NSApplicationDelegateAdaptor constructs the delegate
+    // during SwiftUI App init — before AppKit has connected to the window
+    // server. Touching NSStatusBar that early aborts on Intel
+    // (SkyLight CGSConnectionByID assertion).
+    private(set) var container: AppContainer!
     private var preferencesWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        container = AppContainer()
+
         // Status bar wiring
         container.statusBar.onOpen = { [weak self] in
             guard let self else { return }

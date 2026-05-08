@@ -8,8 +8,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    MARKETING_VERSION: "1.0.3"
-    CURRENT_PROJECT_VERSION: "4"
+    MARKETING_VERSION: "1.0.5"
+    CURRENT_PROJECT_VERSION: "6"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
 targets:
   QDict:
@@ -56,8 +56,12 @@ targets:
           # Debug so the app can launch; Release keeps it on.
           ENABLE_HARDENED_RUNTIME: NO
         Release:
-          CODE_SIGN_IDENTITY: "simonkey dev"
+          # Ad-hoc sign for personal DMG distribution. Avoids the
+          # "personal cert not trusted on other Macs" failure mode where
+          # amfid kills the app on launch under hardened runtime.
+          CODE_SIGN_IDENTITY: "-"
           CODE_SIGNING_REQUIRED: YES
+          ENABLE_HARDENED_RUNTIME: NO
   QDictTests:
     type: bundle.unit-test
     platform: macOS
