@@ -29,3 +29,6 @@ shared/dictionary/ecdict.csv
 
 # Local-only design docs / plans / specs
 /docs/
+
+# Local API keys
+macos/QDict/Translation/ProviderSecrets.swift

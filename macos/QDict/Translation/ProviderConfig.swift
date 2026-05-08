@@ -3,19 +3,16 @@ import Foundation
 /// Hardcoded provider configuration. Single source of truth for which provider
 /// to call and what credentials to use.
 ///
-/// This replaces user-configurable provider settings while keeping the
-/// multi-provider routing skeleton in place. Future plan: swap these constants
-/// for a server-side router.
+/// Keys live in `ProviderSecrets.swift`, which is gitignored so they don't
+/// ride along with the public repo. Recreate that file after a fresh clone.
 enum ProviderConfig {
     /// Currently-active provider. Change here to test other providers.
     static let active: ProviderKind = .deepseek
 
-    /// API keys per provider. Empty string means "not configured yet".
-    /// Filled in locally; this repo is not published.
     static let apiKeys: [ProviderKind: String] = [
-        .deepseek: "REDACTED",
-        .openai:   "",
-        .claude:   ""
+        .deepseek: ProviderSecrets.deepseek,
+        .openai:   ProviderSecrets.openai,
+        .claude:   ProviderSecrets.claude
     ]
 
     static func apiKey(for kind: ProviderKind) -> String {
