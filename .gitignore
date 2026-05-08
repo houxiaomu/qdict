@@ -26,3 +26,6 @@ shared/dictionary/ecdict.csv
 
 # Brainstorm visual companion artifacts
 .superpowers/
+
+# Local-only design docs / plans / specs
+/docs/
